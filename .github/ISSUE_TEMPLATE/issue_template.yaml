@@ -40,7 +40,7 @@ body:
   id: connected-issue
   attributes:
     label: What is the connected issue?
-    value: Ex. #00001
+    placeholder: Ex. #00001
   validations:
     required: false
   

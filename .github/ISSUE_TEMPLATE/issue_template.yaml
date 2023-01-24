@@ -1,27 +1,26 @@
 name: Issue
 description: This is a template for issue creation
 body:
-  - type: dropdown
-    id: issue-type
-    attributes:
-      label: Type of Issue
-      description: What is the issue type?
-      multiple: false
-      options:
-        - Build
-        - Bug
-        - Documentation
-        - Feature
-        - Preformance
-      validations:
-        required: true
-  - type: textarea
-    id: issue-description
-    attributes:
-      label: Description of Issue
-      description: What is the issue to be addressed?
-      placeholder: For bugs describe the current behavior and attach instructions to reproduce.
-      value:
-      render: shell
+- type: dropdown
+  id: issue-type
+  attributes:
+    label: Type of Issue
+    description: What is the issue type?
+    multiple: false
+    options:
+      - Build
+      - Bug
+      - Documentation
+      - Feature
+      - Preformance
     validations:
       required: true
+- type: textarea
+  id: issue-description
+  attributes:
+    label: Description of Issue
+    description: What is the issue to be addressed?
+    placeholder: For bugs describe the current behavior and attach instructions to reproduce.
+    render: shell
+  validations:
+    required: true

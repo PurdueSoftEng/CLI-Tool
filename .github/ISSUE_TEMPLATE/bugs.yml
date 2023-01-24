@@ -1,6 +1,6 @@
 name: Bug Report
 description: Bug report issue
-labels: ["bug", "urg:medium", ]
+labels: ["bug", "urg:medium", "stat:wait_for_ack"]
 title: "[BUG]: "
 body:
 - type: textarea
@@ -22,7 +22,7 @@ body:
   validations:
     required: false 
 - type: textarea
-  id: bug-occurence
+  id: bug-reproduce
   attributes:
     label: Bug Reproducability
     description: How did/do you produce the bug?

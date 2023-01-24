@@ -13,8 +13,8 @@ body:
       - Documentation
       - Feature
       - Preformance
-    validations:
-      required: true
+  validations:
+    required: true
 - type: textarea
   id: issue-description
   attributes:

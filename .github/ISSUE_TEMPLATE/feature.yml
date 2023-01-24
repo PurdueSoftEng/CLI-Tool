@@ -1,0 +1,41 @@
+name: Feature Request
+description: Feature request issue
+labels: ["feature", "urg:low", "stat:wait_for_ack"]
+title: "[FEAT]: "
+body:
+- type: textarea
+  id: issue-description
+  attributes:
+    label: Description of Feature
+    description: What is the feature to be added?
+    placeholder: Give code ideas or places to start if applicable
+    render: shell
+  validations:
+    required: true
+- type: textarea
+  id: issue-description
+  attributes:
+    label: Feature Constraints
+    description: What are hard design considerations for this feature?
+    placeholder: Give any preformance or porting requirements/restrictions
+    render: shell
+  validations:
+    required: true
+- type: checkboxes
+  id: critical
+  attributes:
+    label: Is this a stalled or critical issue?
+    description: A stalled issue is one that is currently awaiting the artificats of another
+    options:
+      - label: Critical
+        required: false
+      - label: Stalled
+        required: false
+- type: input
+  id: connected-issue
+  attributes:
+    label: What is the connected issue?
+    placeholder: Ex. #00001
+  validations:
+    required: false
+  

@@ -1,5 +1,7 @@
 name: Issue
 description: This is a template for issue creation
+labels: ['CLI-Tool']
+title: [ISSUE]
 body:
 - type: dropdown
   id: issue-type
@@ -20,7 +22,25 @@ body:
   attributes:
     label: Description of Issue
     description: What is the issue to be addressed?
-    placeholder: For bugs describe the current behavior and attach instructions to reproduce.
+    placeholder: Give code ideas or places to start if applicable
     render: shell
   validations:
     required: true
+- type: checkboxes
+  id: critical
+  attributes:
+    label: Is this a stalled or critical issue?
+    description: A stalled issue is one that is currently awaiting the artificats of another
+    options:
+      - label: Critical
+        required: false
+      - label: Stalled
+        required: false
+- type: input
+  id: connected-issue
+  attributes:
+    label: What is the connected issue?
+    value: Ex. #00001
+  validations:
+    required: false
+  

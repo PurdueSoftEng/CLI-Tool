@@ -1,6 +1,6 @@
 name: Security Vulnerability
-description: Security Vulnerability Issure
-labels: ["security", "urg:high", "stat:wait_for_ack"
+description: Security vulnerability issue
+labels: ["security", "urg:high", "stat:wait_for_ack"]
 title: "[SECURE]: "
 body:
 - type: textarea

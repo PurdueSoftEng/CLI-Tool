@@ -1,0 +1,50 @@
+name: Bug Report
+description: Bug report issue
+labels: ["bug", "urg:medium", ]
+title: "[BUG]: "
+body:
+- type: textarea
+  id: issue-description
+  attributes:
+    label: Description of Bug
+    description: What does the bug appear to do?
+    placeholder: Describe what you believe the bug is and what it stems from
+    render: shell
+  validations:
+    required: true
+- type: textarea
+  id: bug-output
+  attributes:
+    label: Bug Output
+    description: What does the bug output?
+    placeholder: Copy any error code here
+    render: shell
+  validations:
+    required: false 
+- type: textarea
+  id: bug-occurence
+  attributes:
+    label: Bug Reproducability
+    description: How did/do you produce the bug?
+    placeholder: What steps did you take to produce the bug?
+    render: shell
+  validations:
+    required: false    
+- type: checkboxes
+  id: critical
+  attributes:
+    label: Is this a stalled or critical issue?
+    description: A stalled issue is one that is currently awaiting the artificats of another
+    options:
+      - label: Critical
+        required: false
+      - label: Stalled
+        required: false
+- type: input
+  id: connected-issue
+  attributes:
+    label: What is the connected issue?
+    placeholder: Ex. #00001
+  validations:
+    required: false
+  

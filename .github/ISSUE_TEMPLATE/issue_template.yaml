@@ -1,7 +1,7 @@
 name: Issue
 description: This is a template for issue creation
-labels: ['CLI-Tool']
-title: [ISSUE]
+labels: ["CLI-Tool"]
+itle: "[ISSUE]: "
 body:
 - type: dropdown
   id: issue-type

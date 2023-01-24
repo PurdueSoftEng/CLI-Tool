@@ -13,7 +13,7 @@ body:
   validations:
     required: true
 - type: textarea
-  id: issue-description
+  id: issue-constraints
   attributes:
     label: Feature Constraints
     description: What are hard design considerations for this feature?

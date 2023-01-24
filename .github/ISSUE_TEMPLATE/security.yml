@@ -1,0 +1,41 @@
+name: Security Vulnerability
+description: Security Vulnerability Issure
+labels: ["security", "urg:high", "stat:wait_for_ack"
+title: "[SECURE]: "
+body:
+- type: textarea
+  id: issue-description
+  attributes:
+    label: Description of Vulnerability
+    description: What is the issue to be addressed?
+    placeholder: Describe the vulnerability and what it might stem from
+    render: shell
+  validations:
+    required: true
+- type: textarea
+  id: issue-reproduce
+  attributes:
+    label: Vulnerability Reproduction
+    description: How did/do you reproduce the vulnerability?
+    placeholder: Describe how to produce vulnerability and copy any output logs for the vulnerability
+    render: shell
+  validations:
+    required: true
+- type: checkboxes
+  id: critical
+  attributes:
+    label: Is this a stalled or critical issue?
+    description: A stalled issue is one that is currently awaiting the artificats of another
+    options:
+      - label: Critical
+        required: false
+      - label: Stalled
+        required: false
+- type: input
+  id: connected-issue
+  attributes:
+    label: What is the connected issue?
+    placeholder: Ex. #00001
+  validations:
+    required: false
+  

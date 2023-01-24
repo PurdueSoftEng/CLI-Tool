@@ -1,6 +1,6 @@
 name: Issue
 description: This is a template for issue creation
-labels: ["CLI-Tool"]
+labels: ["CLI-Tool", "urg:low", "stat:wait_for_ack"]
 title: "[ISSUE]: "
 body:
 - type: dropdown

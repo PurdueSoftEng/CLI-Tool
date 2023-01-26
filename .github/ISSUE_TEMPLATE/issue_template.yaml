@@ -11,9 +11,9 @@ body:
     multiple: false
     options:
       - Build
-      - Bug
+      - Question/Comment
       - Documentation
-      - Feature
+      - Research
       - Preformance
   validations:
     required: true

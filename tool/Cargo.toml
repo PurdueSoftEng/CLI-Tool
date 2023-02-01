@@ -10,3 +10,11 @@ clap = { version = "4.0", feature = ["derive"], features = ["derive"] }
 anyhow = "1.0"
 log = "0.4.17"
 env_logger = "0.10.0"
+octocrab = "0.18.1"
+tokio = { version = "1.17.0", default-features = false, features = [
+    "macros",
+    "rt-multi-thread",
+    "time",
+] }
+wiremock = "0.5.3"
+serde = "1.0.152"

@@ -1,11 +1,13 @@
 extern crate octocrab;
 use octocrab::{Octocrab, Page, Result, models};
 
+#[allow(non_snake_case)]
 pub fn initOcto(token: String) -> Result<Octocrab, octocrab::Error>
 {
     (Octocrab::builder().personal_token(token).build())
 }
 
+#[allow(non_snake_case)]
 pub async fn getRepo(token: String, owner: String, repo: String) -> octocrab::models::Repository
 {
     let octo = Octocrab::builder().personal_token(token).build().unwrap();
@@ -16,6 +18,7 @@ pub async fn getRepo(token: String, owner: String, repo: String) -> octocrab::mo
     }
 }
 
+#[allow(non_snake_case)]
 pub async fn getIssue(token: String, owner: String, repo: String) -> Page<octocrab::models::issues::Issue>
 {
     let route = format!("repos/{owner}/{repo}/issues/");

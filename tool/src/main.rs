@@ -32,6 +32,7 @@ async fn main() -> Result<()> {
     //let page = octo::getAllIssues(token.clone(), "microsoft".into(), "vscode".into()).await;
 
     
+    
     // TODO optimize with BefReader    
     let content = std::fs::read_to_string(&args.path).unwrap();
     let path = &args.path;

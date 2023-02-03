@@ -17,6 +17,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - uses: space-wizards/submodule-dependency@v0.1.5
     - name: Build
       working-directory: tool/
       run: cargo build --verbose

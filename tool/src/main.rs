@@ -26,7 +26,11 @@ async fn main() -> Result<()> {
     let mut handle_lock = stdout.lock();
     let token: String = std::env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
     let repo = octo::getRepo(token.clone(), "rust-lang".into(), "rust".into()).await;
-    let page = octo::getIssue(token.clone(), "rust-lang".into(), "rust".into()).await;
+    //let page = octo::getIssue(token.clone(), "rust-lang".into(), "rust".into()).await;
+    //let page = octo::getIssue(token.clone(), "PurdueSoftEng".into(), "CLI-Tool".into()).await;
+    let page = octo::getIssue(token.clone(), "MinecraftForge".into(), "ForgeGradle".into()).await;
+    //let page = octo::getAllIssues(token.clone(), "microsoft".into(), "vscode".into()).await;
+
     
     // TODO optimize with BefReader    
     let content = std::fs::read_to_string(&args.path).unwrap();
@@ -34,31 +38,34 @@ async fn main() -> Result<()> {
     let content = std::fs::read_to_string(path)
         .with_context(|| format!("could not read file `{}`", path.display()))?;
 
-    calcResponsiveMaintainer(1, 1, 1.0, 10.0);
+    let mut elements = vec![];
+    elements.push("1/10/2020");
+    elements.push("1/11/2020");
+    calcResponsiveMaintainer(1.0, 1.0, 1.0, 10.0);
 
     writeln!(handle_lock, "file content: {}", content);
     writeln!(handle_lock, "{:#?}", repo.license);
-    for issue in page
-    {
-        writeln!(handle_lock, "{}", issue.title);
-    }
+
     Ok(())
 
 }
 
 #[allow(non_snake_case)]
-// For ResponsiveMaintainer and measuring the continuous integration we will use the equation:
-//  WF *CI+1ti=0tc(t) +1/(avg time)
-// The timescale (t) can be dynamic depending on further analysis. The weight factor (WF) will be 
-// later tuned depending on the importance we choose to place on projects with continuous integration. 
-// Continuous integration (CI) is a binary value based entirely on if the project has workflows or not.  
-// We will be using an average time metric to see on average how long issues are open, in which we 
-// add the inverse.
-fn calcResponsiveMaintainer(weightFactor:i32, continuousIntegration:i32, t:f32, avgTime:f32) -> f32
+fn calcResponsiveMaintainer(weightFactor:f32, continuousIntegration:f32, summation:f32, avgTime:f32) -> f32
 {
-    let score:f32 = 0.0;
-    
+    let mut score:f32 = 0.0;
 
+    let mut i = 0;
+    // for issue in issues
+    // {
+    //     println!("{}: {}", i, issue.created_at);
+    //     i += 1;
+    // }
+    // for i in (0..t){
+    //     score+=1.0;
+    // }
+    score = weightFactor * continuousIntegration + summation + (1.0/avgTime);
+    println!("Score: {}", score);
     return score;
 }
 

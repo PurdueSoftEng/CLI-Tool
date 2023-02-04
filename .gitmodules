@@ -1,4 +1,4 @@
 
 [submodule "tool/src/octocrab"]
 	path = tool/src/octocrab
-	url = git@github.com:PurdueSoftEng/octocrab.git
+	url = https://github.com/PurdueSoftEng/octocrab.git

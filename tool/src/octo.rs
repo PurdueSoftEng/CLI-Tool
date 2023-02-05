@@ -16,12 +16,22 @@ pub async fn getRepo(token: String, owner: String, repo: String) -> octocrab::mo
     }
 }
 
-pub async fn getIssue(token: String, owner: String, repo: String) -> Page<octocrab::models::issues::Issue>
+pub async fn getIssues(token: String, owner: String, repo: String) -> Page<octocrab::models::issues::Issue>
 {
-    let route = format!("repos/{owner}/{repo}/issues/");
     let octo = Octocrab::builder().personal_token(token).build().unwrap();
 
     match octo.issues(owner, repo).list().send().await
+    {
+        Ok(page) => page,
+        Err(_) => panic!("Error fetching issue"),
+    }
+}
+
+pub async fn getPulls(token: String, owner: String, repo: String) ->Page<octocrab::models::pulls::PullRequest>
+{
+    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+    
+    match octo.pulls(owner, repo).list().send().await
     {
         Ok(page) => page,
         Err(_) => panic!("Error fetching issue"),

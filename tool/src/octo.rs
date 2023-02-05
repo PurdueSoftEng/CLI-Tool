@@ -107,3 +107,14 @@ pub fn getAvgIssueDuration(binnedIssues:Vec<Vec<octocrab::models::issues::Issue>
     let average = sum as f64 / durations.len() as f64;
     return average;
 }
+
+pub async fn getPulls(token: String, owner: String, repo: String) ->Page<octocrab::models::pulls::PullRequest>
+{
+    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+    
+    match octo.pulls(owner, repo).list().send().await
+    {
+        Ok(page) => page,
+        Err(_) => panic!("Error fetching issue"),
+    }
+}

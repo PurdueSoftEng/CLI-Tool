@@ -1,5 +1,6 @@
 extern crate octocrab;
 use octocrab::{Octocrab, Page, Result, models, params};
+use std::error::Error;
 
 #[allow(non_snake_case)]
 pub fn initOcto(token: String) -> Result<Octocrab, octocrab::Error>
@@ -8,29 +9,25 @@ pub fn initOcto(token: String) -> Result<Octocrab, octocrab::Error>
 }
 
 #[allow(non_snake_case)]
-pub async fn getRepo(token: String, owner: String, repo: String) -> octocrab::models::Repository
-{
+pub async fn getRepo(token: String, owner: String, repo: String) -> Result<octocrab::models::Repository, ()> {
     let octo = Octocrab::builder().personal_token(token).build().unwrap();
-    match octo.repos(owner, repo).get().await
-    {
+    let repo = match octo.repos(owner, repo).get().await {
         Ok(repo) => repo,
-        Err(_) => panic!("Error fetching repo"),
-    }
+        Err(_) => return Err(()),
+    };
+    Ok(repo)
 }
 
 #[allow(non_snake_case)]
 pub async fn getIssue(token: String, owner: String, repo: String) -> Result<Page<octocrab::models::issues::Issue>, octocrab::Error> {
     let route = format!("repos/{owner}/{repo}/issues/");
     let octo = Octocrab::builder().personal_token(token).build().unwrap();
-
-    println!("Owner: {}", owner);
-    println!("Repo: {}", repo);
-    
     let mut page = octo.issues(owner, repo).list().state(params::State::All).send().await?;
+
     let mut i = 0;
     loop {
         for issue in &page.items {
-            println!("{}: {} -- {}", i, issue.title, issue.created_at);
+            //println!("{}: {} -- {}", i, issue.title, issue.created_at);
             i += 1;
         }
         page = match octo
@@ -45,119 +42,68 @@ pub async fn getIssue(token: String, owner: String, repo: String) -> Result<Page
 
     Ok(page)
 }
-// pub async fn getIssue(token: String, owner: String, repo: String) -> Page<octocrab::models::issues::Issue>
-// {
-//     let route = format!("repos/{owner}/{repo}/issues/");
-//     let octo = Octocrab::builder().personal_token(token).build().unwrap();
 
-//     println!("Owner: {}", owner);
-//     println!("Repo: {}", repo);
-//     //match octo.issues(owner, repo).list().send().await
-
+#[allow(non_snake_case)]
+pub async fn getIssues(token: String, owner: String, repo: String, t: i64) -> Result<Vec<Vec<octocrab::models::issues::Issue>>> {
+    let route = format!("repos/{owner}/{repo}/issues/");
+    let octo = Octocrab::builder().personal_token(token).build().unwrap();
     
-//     let mut page = octo.issues(owner, repo).list().send().await;
+    let mut page = octo.issues(owner, repo).list().state(params::State::All).send().await?;
+    let mut i = 0;
+    let bin_size = chrono::Duration::days(t);
+    let mut issues = Vec::new();
+    let mut all_issues = Vec::new();
 
-//     loop {
-//         for issue in &page {
-//             println!("{}", issue.title);
-//         }
-//         page = match octo
-//             .get_page::<models::issues::Issue>(&page.next)
-//             .await
-//         {
-//             Ok(Some(next_page)) => next_page,
-//             Ok(None) => break,
-//             Err(_) => break,
-//         }
-//     }
-// }
+    loop {
+        for issue in &page.items {
 
-    // match octo.issues(owner, repo).list().send().await
-    // {
-    //     Ok(page) => page,
-    //     Err(_) => panic!("Error fetching issue"),
-    // }
+            let created_at = issue.created_at.naive_utc();
+            let bin_start = created_at.date().and_hms(0, 0, 0);
+            let bin_end = bin_start + bin_size;
+            if created_at >= bin_start && created_at < bin_end {
+                issues.push(issue.clone());
+            }
+            if created_at >= bin_end {
+                all_issues.push(issues.clone());
+                issues = Vec::new();
+            }
+        }
 
+        if !issues.is_empty() {
+            all_issues.push(issues.clone());
+        }
+        
+        page = match octo
+            .get_page::<models::issues::Issue>(&page.next)
+            .await
+        {
+            Ok(Some(next_page)) => next_page,
+            Ok(None) => break,
+            Err(_) => break,
+        }
+    }
 
-// pub async fn getAllIssues(token: String, owner: String, repo: String) -> Vec<octocrab::models::issues::Issue> {
-//     //let route = format!("repos/{owner}/{repo}/issues/");
-//     let route = format!("repos/{}/{}/issues/", owner, repo);
-//     let octo = Octocrab::builder().personal_token(token).build().unwrap();
-//     let mut page_number = 1;
-//     let mut all_issues = vec![];
+    Ok(all_issues)
+}
 
-//     loop {
-//         let url = format!("{}?page={}&per_page=100", route, page_number);
-//         //let mut page = match octo.get::<Page<octocrab::models::issues::Issue>, &str, &str>(&url, Some(&route.as_str())).await {
-//         let mut page = match octo.get::<Page<octocrab::models::issues::Issue>, &str, &str>(&route, Some(&url.as_str())).await {
-//             Ok(page) => page,
-//             Err(error) => panic!("Error fetching issue: {}", error),
-//         };
+#[allow(non_snake_case)]
+pub fn getAvgIssueDuration(binnedIssues:Vec<Vec<octocrab::models::issues::Issue>>) -> f64{
+    let mut durations: Vec<i64> = Vec::new();
 
-//         if page.clone().into_iter().len() == 0 {
-//             break;
-//         }
+    for bin in binnedIssues{
+        println!("bin");
+        for iss in bin{
+            let issue_start = iss.created_at;
+            if let Some(issue_end) = iss.closed_at {
+                let duration = issue_end - issue_start;
+                let duration_in_minutes = duration.num_seconds() / 60;
+                println!("Duration in minutes: {}", duration_in_minutes);
+                durations.push(duration_in_minutes);
+            } 
+        }
+    }
 
-//         all_issues.extend(page.clone().into_iter().map(|issue| issue.clone()));
-//         page_number += 1;
-//     }
-
-//     all_issues
-// }
-
-// pub async fn getAllIssues(token: String, owner: String, repo: String) -> Vec<octocrab::models::issues::Issue> {
-//     let route = format!("repos/{owner}/{repo}/issues/", owner=owner, repo=repo);
-//     let octo = Octocrab::builder().personal_token(token).build().unwrap();
-//     let mut page_number = 1;
-//     let mut all_issues = vec![];
-
-//     loop {
-//         let url = format!("{}?page={}&per_page=100", route, page_number);
-//         let response = octo.get(&url, Some(&route.as_str())).await;
-//         match response {
-//             Ok(response) => {
-//                 println!("Response: {:?}", response.text().await);
-//                 let mut page = response.json::<Page<octocrab::models::issues::Issue>>().await.unwrap();
-//                 if page.clone().into_iter().len() == 0 {
-//                     break;
-//                 }
-
-//                 all_issues.extend(page.clone().into_iter().map(|issue| issue.clone()));
-//                 page_number += 1;
-//             },
-//             Err(error) => panic!("Error fetching issue: {}", error),
-//         }
-//     }
-
-//     all_issues
-// }
-
-// pub async fn getIssue(token: String, owner: String, repo: String) -> Vec<octocrab::models::issues::Issue>
-// {
-//     let route = format!("repos/{owner}/{repo}/issues/");
-//     let octo = Octocrab::builder().personal_token(token).build().unwrap();
-
-//     println!("Owner: {}", owner);
-//     println!("Repo: {}", repo);
-//     let mut page_number = 1;
-//     let mut all_issues = vec![];
-
-//     loop {
-//         let url = format!("{}?page={}&per_page=100", route, page_number);
-//         let page = match octo.get::<Page<octocrab::models::issues::Issue>, &str, &str>(&url, Some(&route.as_str())).await {            Ok(page) => page,
-//             Err(_) => panic!("Error fetching issue"),
-//         };
-
-//         if page.clone().into_iter().len() == 0 {
-//             break;
-//         }
-
-//         all_issues.extend(page.clone().into_iter().map(|issue| issue.clone()));
-//         page_number += 1;
-//     }
-
-//     all_issues
-// }
-
-
-
+    let sum: i64 = durations.iter().sum();
+    let average = sum as f64 / durations.len() as f64;
+    return average;
+}

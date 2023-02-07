@@ -3,13 +3,13 @@ use octocrab::{Octocrab, Page, Result, models, params};
 use std::error::Error;
 
 #[allow(non_snake_case)]
-pub fn initOcto(token: String) -> Result<Octocrab, octocrab::Error>
+pub fn init_octo(token: String) -> Result<Octocrab, octocrab::Error>
 {
     (Octocrab::builder().personal_token(token).build())
 }
 
 #[allow(non_snake_case)]
-pub async fn getRepo(token: String, owner: String, repo: String) -> Result<octocrab::models::Repository, ()> {
+pub async fn get_repo(token: String, owner: String, repo: String) -> Result<octocrab::models::Repository, ()> {
     let octo = Octocrab::builder().personal_token(token).build().unwrap();
     let repo = match octo.repos(owner, repo).get().await {
         Ok(repo) => repo,
@@ -19,7 +19,7 @@ pub async fn getRepo(token: String, owner: String, repo: String) -> Result<octoc
 }
 
 #[allow(non_snake_case)]
-pub async fn getIssue(token: String, owner: String, repo: String) -> Result<Page<octocrab::models::issues::Issue>, octocrab::Error> {
+pub async fn get_issue(token: String, owner: String, repo: String) -> Result<Page<octocrab::models::issues::Issue>, octocrab::Error> {
     let route = format!("repos/{owner}/{repo}/issues/");
     let octo = Octocrab::builder().personal_token(token).build().unwrap();
     let mut page = octo.issues(owner, repo).list().state(params::State::All).send().await?;
@@ -44,7 +44,7 @@ pub async fn getIssue(token: String, owner: String, repo: String) -> Result<Page
 }
 
 #[allow(non_snake_case)]
-pub async fn getIssues(token: String, owner: String, repo: String, t: i64) -> Result<Vec<Vec<octocrab::models::issues::Issue>>> {
+pub async fn get_issues(token: String, owner: String, repo: String, t: i64) -> Result<Vec<Vec<octocrab::models::issues::Issue>>> {
     let route = format!("repos/{owner}/{repo}/issues/");
     let octo = Octocrab::builder().personal_token(token).build().unwrap();
     
@@ -87,7 +87,7 @@ pub async fn getIssues(token: String, owner: String, repo: String, t: i64) -> Re
 }
 
 #[allow(non_snake_case)]
-pub fn getAvgIssueDuration(binnedIssues:Vec<Vec<octocrab::models::issues::Issue>>) -> f64{
+pub fn get_avg_issue_duration(binnedIssues:Vec<Vec<octocrab::models::issues::Issue>>) -> f64{
     let mut durations: Vec<i64> = Vec::new();
 
     for bin in binnedIssues{
@@ -108,7 +108,7 @@ pub fn getAvgIssueDuration(binnedIssues:Vec<Vec<octocrab::models::issues::Issue>
     return average;
 }
 
-pub async fn getPulls(token: String, owner: String, repo: String) ->Page<octocrab::models::pulls::PullRequest>
+pub async fn get_pulls(token: String, owner: String, repo: String) ->Page<octocrab::models::pulls::PullRequest>
 {
     let octo = Octocrab::builder().personal_token(token).build().unwrap();
     

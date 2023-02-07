@@ -1,7 +1,6 @@
 #![allow(unused)]
 
 use clap::Parser;
-use octocrab::Page;
 use log::{info, warn, debug};
 use std::io::{self, Write};
 use anyhow::{Context, Result};
@@ -28,17 +27,17 @@ async fn main() -> Result<()> {
     let stdout = io::stdout();
     let mut handle_lock = stdout.lock();
     let token: String = std::env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
-    let repo = octo::getRepo(token.clone(), "MinecraftForge".into(), "ForgeGradle".into()).await;
+    let repo = octo::get_repo(token.clone(), "MinecraftForge".into(), "ForgeGradle".into()).await.unwrap();
 
-    let binnedIssues = octo::getIssues(token.clone(), "PurdueSoftEng".into(), "CLI-Tool".into(), 2).await;
+    let binned_issues = octo::get_issues(token.clone(), "PurdueSoftEng".into(), "CLI-Tool".into(), 2).await.unwrap();
 
-    let averageDuration: f64 = octo::getAvgIssueDuration(binnedIssues.unwrap());
+    let average_duration: f64 = octo::get_avg_issue_duration(binned_issues);
     //let page = octo::getAllIssues(token.clone(), "microsoft".into(), "vscode".into()).await;
 
     let token: String = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
-    let repo = octo::getRepo(token.clone(), "rust-lang".into(), "rust".into()).await;
+    let repo = octo::get_repo(token.clone(), "rust-lang".into(), "rust".into()).await.unwrap();
     info!("Retrieved {}", repo.name);
-    let page = octo::getIssues(token.clone(), "rust-lang".into(), "rust".into()).await;
+    let page = octo::get_issue(token.clone(), "rust-lang".into(), "rust".into()).await.unwrap();
 
     // TODO optimize with BefReader    
     let content = std::fs::read_to_string(&args.path);
@@ -46,7 +45,7 @@ async fn main() -> Result<()> {
     let content = std::fs::read_to_string(path)
         .with_context(|| format!("could not read file `{}`", path.display()))?;
 
-    calcResponsiveMaintainer(1.0, 1.0, 1.0, averageDuration, 2.0);
+    calc_responsive_maintainer(1.0, 1.0, 1.0, average_duration, 2.0);
 
     writeln!(handle_lock, "file content: {}", content);
 
@@ -60,10 +59,10 @@ async fn main() -> Result<()> {
 }
 
 #[allow(non_snake_case)]
-fn calcResponsiveMaintainer(weightFactor:f64, continuousIntegration:f64, summation:f64, avgTime:f64, t:f64) -> f64
+fn calc_responsive_maintainer(weight_factor:f64, continuous_integration:f64, summation:f64, avg_time:f64, t:f64) -> f64
 {
     let mut score:f64 = 0.0;
-    score = weightFactor * continuousIntegration + summation + (1.0/avgTime);
+    score = weight_factor * continuous_integration + summation + (1.0/avg_time);
 
     println!("Score: {}", score);
     return score;

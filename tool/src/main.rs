@@ -27,9 +27,9 @@ async fn main() -> Result<()> {
     let stdout = io::stdout();
     let mut handle_lock = stdout.lock();
     let token: String = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
-    let repo = octo::getRepo(token.clone(), "rust-lang".into(), "rust".into()).await;
+    let repo = octo::get_repo(token.clone(), "rust-lang".into(), "rust".into()).await;
     info!("Retrieved {}", repo.name);
-    let page = octo::getIssues(token.clone(), "rust-lang".into(), "rust".into()).await;
+    let page = octo::get_issues(token.clone(), "rust-lang".into(), "rust".into()).await;
     
     // TODO optimize with BefReader    
     let content = std::fs::read_to_string(&args.path).unwrap();
@@ -43,6 +43,8 @@ async fn main() -> Result<()> {
     {
         writeln!(handle_lock, "{:#?}", issue.closed_at);
     }
+    let resp = octo::get_graphql(token.clone(), "rust-lang".into(), "rust".into()).await;
+    writeln!(handle_lock, "Query: {:#?}", resp);
     Ok(())
 }
 

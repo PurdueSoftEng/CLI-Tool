@@ -55,7 +55,7 @@ async fn main() -> Result<()> {
     {
         writeln!(handle_lock, "{:#?}", issue.closed_at);
     }
-    let resp = octo::get_graphql(token.clone(), "rust-lang".into(), "rust".into()).await;
+    let resp = octo::get_num_commits(token.clone(), "rust-lang".into(), "rust".into()).await;
     writeln!(handle_lock, "Query: {:#?}", resp);
     Ok(())
 

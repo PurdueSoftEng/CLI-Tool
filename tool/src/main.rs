@@ -9,6 +9,7 @@ use dotenv::dotenv;
 use std::env;
 
 mod octo;
+mod calc_responsive_maintainer;
 
 
 #[derive(Parser)]
@@ -27,12 +28,24 @@ async fn main() -> Result<()> {
     let stdout = io::stdout();
     let mut handle_lock = stdout.lock();
     let token: String = std::env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
-    let repo = octo::get_repo(token.clone(), "MinecraftForge".into(), "ForgeGradle".into()).await.unwrap();
 
-    let binned_issues = octo::get_issues(token.clone(), "PurdueSoftEng".into(), "CLI-Tool".into(), 2).await.unwrap();
+    // let owner = "MinecraftForge";
+    // let repo_name = "ForgeGradle";
+    let owner = "PurdueSoftEng";
+    let repo_name = "CLI-tool";
+    let repo = octo::get_repo(token.clone(), owner.into(), repo_name.into()).await.unwrap();
 
-    let average_duration: f64 = octo::get_avg_issue_duration(binned_issues);
-    //let page = octo::getAllIssues(token.clone(), "microsoft".into(), "vscode".into()).await;
+    let t = calc_responsive_maintainer::calc_commit_bin_size(0.1, repo.clone());
+    let binned_issues = octo::get_issues(token.clone(), owner.into(), repo_name.into(), t as i64).await.unwrap();
+    let average_duration: f64 = calc_responsive_maintainer::get_avg_issue_duration(binned_issues);
+    let commit_pages = octo::get_all_commits(token.clone(), owner.into(), repo_name.into()).await.unwrap();
+    //let temp = calc_responsive_maintainer::calc_duration_between_first_and_last_commit(commit_pages.clone());
+    //let t = octo::get_duration_between_first_and_last_commit(token.clone(), owner.into(), repo_name.into()).await.unwrap();
+    //let t = 0.0;
+    let responsive_maintainer_summation: f64 = calc_responsive_maintainer::calc_responsive_maintainer_summation(commit_pages, t);
+    let uses_workflows = octo::uses_workflows(token.clone(), owner.into(), repo_name.into()).await.unwrap();
+
+    calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
 
     let token: String = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
     
@@ -46,9 +59,9 @@ async fn main() -> Result<()> {
     let content = std::fs::read_to_string(path)
         .with_context(|| format!("could not read file `{}`", path.display()))?;
 
-    calc_responsive_maintainer(1.0, 1.0, 1.0, average_duration, 2.0);
 
     writeln!(handle_lock, "file content: {}", content);
+    writeln!(handle_lock, "{:#?}", repo.clone().license);
 
     writeln!(handle_lock, "{:#?}", repo.license);
     for issue in page
@@ -58,16 +71,6 @@ async fn main() -> Result<()> {
     let resp = octo::get_num_commits(token.clone(), "rust-lang".into(), "rust".into()).await;
     writeln!(handle_lock, "Query: {:#?}", resp);
     Ok(())
-
 }
 
-#[allow(non_snake_case)]
-fn calc_responsive_maintainer(weight_factor:f64, continuous_integration:f64, summation:f64, avg_time:f64, t:f64) -> f64
-{
-    let mut score:f64 = 0.0;
-    score = weight_factor * continuous_integration + summation + (1.0/avg_time);
-
-    println!("Score: {}", score);
-    return score;
-}
 

@@ -10,7 +10,7 @@ int main(int argc, char* argv[]) {
         // Call bash scripts depending on argv[1]
         if (strcmp(argv[2],"install") == 0) {
             // Navigate to CLI-Tool/tool to be in same directory as Cargo.toml 
-            // chdir("CLI-Tool/tool");
+            chdir("CLI-Tool/tool");
             int installOutput = system("./install.sh");
             printf(installOutput);
             exit(0); // Exit 0 on succcess

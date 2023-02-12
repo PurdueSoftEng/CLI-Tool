@@ -46,21 +46,17 @@ async fn main() -> Result<()> {
 
     calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
 
-    let token: String = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
-    
-    let repo = octo::get_repo(token.clone(), "rust-lang".into(), "rust".into()).await.unwrap();
-    info!("Retrieved {}", repo.name);
-    let page = octo::get_issue(token.clone(), "rust-lang".into(), "rust".into()).await.unwrap();
+    let repo2 = octo::get_repo(token.clone(), "rust-lang".into(), "rust".into()).await.unwrap();
+    info!("Retrieved {}", repo2.name);
 
-    writeln!(handle_lock, "{:#?}", repo.clone().license);
+    writeln!(handle_lock, "{:#?}", repo2.license);
 
-    writeln!(handle_lock, "{:#?}", repo.license);
-    for issue in page
-    {
-        writeln!(handle_lock, "{:#?}", issue.closed_at);
-    }
-    let resp = octo::get_num_commits(token.clone(), "rust-lang".into(), "rust".into()).await;
-    writeln!(handle_lock, "Query: {:#?}", resp);
+    let mut resp = octo::get_license(token.clone(), "rust-lang".into(), "rust".into()).await;
+    let data_layer = resp.get_mut("data").expect("Data key not found");
+    let repository_layer = data_layer.get_mut("repository").expect("Repository key not found");
+    let license_layer = repository_layer.get_mut("licenseInfo").expect("License key not found");
+    writeln!(handle_lock, "Query: {:#?}", license_layer.get("name"));
+
     Ok(())
 }
 

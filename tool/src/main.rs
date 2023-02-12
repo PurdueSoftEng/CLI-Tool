@@ -10,6 +10,7 @@ use std::env;
 
 mod octo;
 mod calc_responsive_maintainer;
+mod calc_license;
 
 #[derive(Parser)]
 struct Cli {
@@ -55,12 +56,7 @@ async fn main() -> Result<()> {
     let data_layer = resp.get_mut("data").expect("Data key not found");
     let repository_layer = data_layer.get_mut("repository").expect("Repository key not found");
     let license_layer = repository_layer.get_mut("licenseInfo").expect("License key not found");
-    writeln!(handle_lock, "{:#?}", license_layer.get("name").as_str().unwrap());
-
-    let unwrapped_license_layer = license_layer.unwrap();
-    let repo_license = unwrapped_license_layer[0];
-    license_layer.wrap();
-    let license_output = calc_license(repo_license);
+    calc_license::calc_licenses(license_layer.get("key").unwrap().to_string());
 
     Ok(())
 }

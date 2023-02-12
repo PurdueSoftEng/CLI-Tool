@@ -5,18 +5,20 @@
 // Compare all licenses key with keyword from: 
 // https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository
 
-fn calc_license(license_key: String) -> bool {
+pub async fn calc_licenses(license_key: String) -> i8 {
     // GitHub licenses must comply with lesser GNU v2.1
-    let github_license = vec!["mit", "apache-2.0", "bsd-3-clause"]; // GitHub License List
 
-    // Loop through and compare license key with GitHub license key word
-    for lincense_keyword in github_license {
-        if license_key == lincense_keyword { // There is a license, return 1
-            return 1;
-        } 
-        
-        return 0; // Else return 0
+    if is_valid(license_key)
+    {
+        return 1
     }
+    return 0
+}
+
+fn is_valid(license_key: String) -> bool
+{
+    let github_license = vec![String::from("mit"), String::from("apache-2.0"), String::from("bsd-3-clause")];
+    (github_license.contains(&license_key))
 }
 
 

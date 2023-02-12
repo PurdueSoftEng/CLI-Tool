@@ -46,10 +46,21 @@ async fn main() -> Result<()> {
 
     calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
 
-    info!("Retrieved {}", repo.clone().name);
+    let token: String = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
+    
+    let repo = octo::get_repo(token.clone(), "rust-lang".into(), "rust".into()).await.unwrap();
+    info!("Retrieved {}", repo.name);
+    let page = octo::get_issue(token.clone(), "rust-lang".into(), "rust".into()).await.unwrap();
 
     writeln!(handle_lock, "{:#?}", repo.clone().license);
 
+    writeln!(handle_lock, "{:#?}", repo.license);
+    for issue in page
+    {
+        writeln!(handle_lock, "{:#?}", issue.closed_at);
+    }
+    let resp = octo::get_num_commits(token.clone(), "rust-lang".into(), "rust".into()).await;
+    writeln!(handle_lock, "Query: {:#?}", resp);
     Ok(())
 }
 

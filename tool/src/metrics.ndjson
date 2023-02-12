@@ -1,0 +1,7 @@
+{"metric":"RAMP_UP_SCORE", "api":"rest", "filepath":"src/rampup.py", "line":35}
+{"metric":"CORRECTNESS_SCORE", "api":"graphql", "filepath":"src/correctness.py", "line":22}
+{"metric":"BUS_FACTOR_SCORE", "api":"", "filepath":"src/busfactor.py", "line":48}
+{"metric":"LICENSE_SCORE", "api":"graphql", "filepath":"src/calc_license.rs", "line":}
+{"metric":"RESPONSIVE_MAINTAINER_SCORE", "api":"???", "filepath":"src/calc_responsive_maintainer", "line":41}
+{"metric":"URL_SCORE", "api":"clone", "filepath":"src/busfactor.py", "line":48}
+{"metric":"NETSCORE", "api":"clone", "filepath":"src/busfactor.py", "line":48}

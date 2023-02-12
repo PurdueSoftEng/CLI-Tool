@@ -214,3 +214,21 @@ pub async fn get_duration_between_first_and_last_commit(token: String, owner: St
     
     Ok(elapsed_days)
 }
+
+// Example of using GraphQL
+pub async fn get_num_commits(token: String, owner: &str, repo: &str) -> serde_json::Value
+{
+    let v = vec!["query {repository(owner: \"", owner, "\", name: \"", repo, "\") {object(expression: \"master\") {... on Commit {history {totalCount}}}}}"];
+
+    let str: String = v.concat();
+
+    println!("{}", str);
+
+    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+
+    match octo.graphql(&str).await
+    {
+        Ok(json) => json,
+        Err(_) => panic!("Error with query"),
+    }
+}

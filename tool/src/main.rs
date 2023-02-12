@@ -57,6 +57,11 @@ async fn main() -> Result<()> {
     let license_layer = repository_layer.get_mut("licenseInfo").expect("License key not found");
     writeln!(handle_lock, "Query: {:#?}", license_layer.get("name"));
 
+    let unwrapped_license_layer = license_layer.unwrap();
+    let repo_license = unwrapped_license_layer[0];
+    license_layer.wrap();
+    let license_output = calc_license(repo_license);
+
     Ok(())
 }
 

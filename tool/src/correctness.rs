@@ -1,5 +1,6 @@
 
-use octocrab::{Client, Error};
+use octocrab::{tokio::net::windows::named_pipe::PipeEnd::Client;
+, Error};
 
 // all issues closed (1/3 weight)
 async fn are_all_issues_closed(repo: &str, client: &Client) -> Result<i32, Error> {

@@ -9,6 +9,7 @@ use dotenv::dotenv;
 use std::env;
 
 mod octo;
+mod calc_bus_factor;
 
 
 #[derive(Parser)]
@@ -32,12 +33,13 @@ async fn main() -> Result<()> {
     let binned_issues = octo::get_issues(token.clone(), "PurdueSoftEng".into(), "CLI-Tool".into(), 2).await.unwrap();
 
     let average_duration: f64 = octo::get_avg_issue_duration(binned_issues);
+    // let average_duration = 2.0;
     //let page = octo::getAllIssues(token.clone(), "microsoft".into(), "vscode".into()).await;
 
     let token: String = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
     let repo = octo::get_repo(token.clone(), "rust-lang".into(), "rust".into()).await.unwrap();
     info!("Retrieved {}", repo.name);
-    let page = octo::get_issue(token.clone(), "rust-lang".into(), "rust".into()).await.unwrap();
+    // let page = octo::get_issue(token.clone(), "rust-lang".into(), "rust".into()).await.unwrap();
 
     // TODO optimize with BefReader    
     let content = std::fs::read_to_string(&args.path);
@@ -46,6 +48,13 @@ async fn main() -> Result<()> {
         .with_context(|| format!("could not read file `{}`", path.display()))?;
 
     calc_responsive_maintainer(1.0, 1.0, 1.0, average_duration, 2.0);
+
+    // //bus factor
+    // calc_bus_factor::get_contributors_with_percentages();
+    // calc_bus_factor::sort_by_percentage();
+    // calc_bus_factor::find_core_contributors();
+    // calc_bus_factor::
+    
 
     writeln!(handle_lock, "file content: {}", content);
 

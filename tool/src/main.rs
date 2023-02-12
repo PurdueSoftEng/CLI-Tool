@@ -55,7 +55,7 @@ async fn main() -> Result<()> {
     let data_layer = resp.get_mut("data").expect("Data key not found");
     let repository_layer = data_layer.get_mut("repository").expect("Repository key not found");
     let license_layer = repository_layer.get_mut("licenseInfo").expect("License key not found");
-    writeln!(handle_lock, "Query: {:#?}", license_layer.get("name"));
+    writeln!(handle_lock, "{:#?}", license_layer.get("name").as_str().unwrap());
 
     Ok(())
 }

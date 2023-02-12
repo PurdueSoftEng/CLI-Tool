@@ -23,3 +23,34 @@ async fn has_readme(repo: &str, client: &Client) -> Result<i32, Error> {
 
     Ok(0)
 }
+
+async fn check_multiple_readmes(repo: &str, client: &Client) -> Result<i32, Error> {
+    let contents_url = format!("/repos/{}/contents/", repo);
+    let contents_response = client.get(contents_url).send().await?;
+
+    let contents = contents_response.json::<Vec<serde_json::Value>>().await?;
+
+    let mut readme_count = 0;
+
+    for content in contents {
+        let name = content["name"].as_str().unwrap();
+        if name.to_lowercase().starts_with("readme") {
+            readme_count += 1;
+        }
+    }
+
+    if readme_count > 1 {
+        Ok(1)
+    } else {
+        Ok(0)
+    }
+}
+
+async fn get_weighted_score(repo: &str, client: &Client) -> Result<f64, Error> {
+    let first = has_readme(repo, client).await?;
+    let second = check_multiple_readmes(repo, client).await?;
+
+    let total_score = (first as f64 / 2.0) + (second as f64 / 2.0);
+
+    Ok(total_score)
+}

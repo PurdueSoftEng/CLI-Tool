@@ -240,7 +240,7 @@ pub async fn get_num_commits(token: String, owner: &str, repo: &str) -> serde_js
 // vector saved as 'contributors' which is a vector of tuples. It is saved as the result.
 pub async fn get_contributors_with_percentages(token: String, owner: String, repo: String) -> Result<Vec<(octocrab::models::repos::Contributor, i32, f32)>, OctocrabError> {
     let octo = Octocrab::builder().personal_token(token).build().unwrap();
-    let contributors = octo.repos(owner, repo).list_contributors().send().await?;
+    let contributors = octo.repos(owner, repo).contributors().list().send().await?;
     let mut contributor_list = vec![];
 
     for contributor in contributors.items {

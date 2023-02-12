@@ -33,22 +33,10 @@ async fn main() -> Result<()> {
     // let repo_name = "ForgeGradle";
     let owner = "PurdueSoftEng";
     let repo_name = "CLI-tool";
-    let repo = octo::get_repo(token.clone(), owner.into(), repo_name.into()).await.unwrap();
 
-    let t = calc_responsive_maintainer::calc_commit_bin_size(0.1, repo.clone());
-    let binned_issues = octo::get_issues(token.clone(), owner.into(), repo_name.into(), t as i64).await.unwrap();
-    let average_duration: f64 = calc_responsive_maintainer::get_avg_issue_duration(binned_issues);
-    let commit_pages = octo::get_all_commits(token.clone(), owner.into(), repo_name.into()).await.unwrap();
-    //let temp = calc_responsive_maintainer::calc_duration_between_first_and_last_commit(commit_pages.clone());
-    //let t = octo::get_duration_between_first_and_last_commit(token.clone(), owner.into(), repo_name.into()).await.unwrap();
-    //let t = 0.0;
-    let responsive_maintainer_summation: f64 = calc_responsive_maintainer::calc_responsive_maintainer_summation(commit_pages, t);
-    let uses_workflows = octo::uses_workflows(token.clone(), owner.into(), repo_name.into()).await.unwrap();
-
-    calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
 
     let token: String = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
-    info!("Retrieved {}", repo.clone().name);
+    //info!("Retrieved {}", repo.clone().name);
 
     // TODO optimize with BefReader    
     let content = std::fs::read_to_string(&args.path);
@@ -58,9 +46,35 @@ async fn main() -> Result<()> {
 
 
     writeln!(handle_lock, "file content: {}", content);
-    writeln!(handle_lock, "{:#?}", repo.clone().license);
+   // writeln!(handle_lock, "{:#?}", repo.clone().license);
 
     Ok(())
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_calc_responsive_maintainer() {
+        // let repo = octo::get_repo(token.clone(), owner.into(), repo_name.into()).await.unwrap();
+        // let t = calc_responsive_maintainer::calc_commit_bin_size(0.1, repo.clone());
+        // let binned_issues = octo::get_issues(token.clone(), owner.into(), repo_name.into(), t as i64).await.unwrap();
+        // let average_duration: f64 = calc_responsive_maintainer::get_avg_issue_duration(binned_issues);
+        // let commit_pages = octo::get_all_commits(token.clone(), owner.into(), repo_name.into()).await.unwrap();
+
+        // let responsive_maintainer_summation: f64 = calc_responsive_maintainer::calc_responsive_maintainer_summation(commit_pages, t);
+        // let uses_workflows = octo::uses_workflows(token.clone(), owner.into(), repo_name.into()).await.unwrap();
+
+        // calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
+
+        let uses_workflows = true;
+        let responsive_maintainer_summation = 100.0;
+        let average_duration = 10.0;
+
+        let expected_output = 100.0;
+        let result = calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
+        assert_eq!(result, expected_output);
+    }
+}
 

@@ -117,11 +117,6 @@ pub async fn uses_workflows(token: String, owner: String, repo: String) -> Resul
     //
     let route = format!("repos/{owner}/{repo}/commits");
     let octo = Octocrab::builder().personal_token(token).build().unwrap();
-
-    match octo.pulls(owner, repo).list().send().await
-    {
-        Ok(page) => page,
-        Err(_) => panic!("Error fetching issue"),
     let workflows = octo.workflows(owner, repo).list_all_runs().send().await?;
 
     let mut uses_workflows: bool = false;

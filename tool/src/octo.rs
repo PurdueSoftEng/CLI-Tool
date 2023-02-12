@@ -1,4 +1,7 @@
 extern crate octocrab;
+
+use serde_json;
+
 use octocrab::{Octocrab, Page, Result, models::{self, repos::RepoCommit}, params};
 use std::error::Error;
 use chrono::{Duration, Utc, NaiveDate};
@@ -210,4 +213,39 @@ pub async fn get_duration_between_first_and_last_commit(token: String, owner: St
     let elapsed_days = duration.num_days() as f64;
     
     Ok(elapsed_days)
+}
+
+// Example of using GraphQL
+pub async fn get_num_commits(token: String, owner: &str, repo: &str) -> serde_json::Value
+{
+    let v = vec!["query {repository(owner: \"", owner, "\", name: \"", repo, "\") {object(expression: \"master\") {... on Commit {history {totalCount}}}}}"];
+
+    let str: String = v.concat();
+
+    println!("{}", str);
+
+    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+
+    match octo.graphql(&str).await
+    {
+        Ok(json) => json,
+        Err(_) => panic!("Error with query"),
+    }
+}
+
+pub async fn get_license(token: String, owner: &str, repo: &str) -> serde_json::Value
+{
+    let v = vec!["query {repository(owner: \"", owner, "\", name: \"", repo, "\") { licenseInfo {key name spdxId url}}}"];
+
+    let str: String = v.concat();
+
+    println!("{}", str);
+
+    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+
+    match octo.graphql(&str).await
+    {
+        Ok(json) => json,
+        Err(_) => panic!("Error with query"),
+    }
 }

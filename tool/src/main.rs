@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 use clap::Parser;
-use log::{info, warn, debug};
+use log::{info, warn, debug, LevelFilter};
 use std::io::{self, Write};
 use anyhow::{Context, Result};
 
@@ -11,10 +11,9 @@ use std::env;
 mod octo;
 mod calc_responsive_maintainer;
 
-
 #[derive(Parser)]
 struct Cli {
-    path: std::path::PathBuf,
+    path: String,
 }
 
 #[derive(Debug)]
@@ -27,7 +26,7 @@ async fn main() -> Result<()> {
     let args = Cli::parse();
     let stdout = io::stdout();
     let mut handle_lock = stdout.lock();
-    let token: String = std::env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
+    let token: String = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
 
     // let owner = "MinecraftForge";
     // let repo_name = "ForgeGradle";
@@ -48,18 +47,20 @@ async fn main() -> Result<()> {
     calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
 
     let token: String = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
-    info!("Retrieved {}", repo.clone().name);
+    
+    let repo = octo::get_repo(token.clone(), "rust-lang".into(), "rust".into()).await.unwrap();
+    info!("Retrieved {}", repo.name);
+    let page = octo::get_issue(token.clone(), "rust-lang".into(), "rust".into()).await.unwrap();
 
-    // TODO optimize with BefReader    
-    let content = std::fs::read_to_string(&args.path);
-    let path = &args.path;
-    let content = std::fs::read_to_string(path)
-        .with_context(|| format!("could not read file `{}`", path.display()))?;
-
-
-    writeln!(handle_lock, "file content: {}", content);
     writeln!(handle_lock, "{:#?}", repo.clone().license);
 
+    writeln!(handle_lock, "{:#?}", repo.license);
+    for issue in page
+    {
+        writeln!(handle_lock, "{:#?}", issue.closed_at);
+    }
+    let resp = octo::get_num_commits(token.clone(), "rust-lang".into(), "rust".into()).await;
+    writeln!(handle_lock, "Query: {:#?}", resp);
     Ok(())
 }
 

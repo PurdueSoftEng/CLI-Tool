@@ -17,6 +17,7 @@ use std::cmp::Ordering;
 
 mod octo;
 mod calc_responsive_maintainer;
+mod calc_license;
 
 #[derive(Parser)]
 struct Cli {
@@ -110,6 +111,7 @@ async fn main() -> Result<()> {
     let owner = repo_info.clone().unwrap().0;
     let repo_name = repo_info.clone().unwrap().1;
     let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await.unwrap();
+    //info!("Retrieved {}", repo.name);
 
     let t = calc_responsive_maintainer::calc_commit_bin_size(0.1, repo.clone());
     let binned_issues = octo::get_issues(token.clone(), owner.clone(), repo_name.clone(), t as i64).await.unwrap();
@@ -122,6 +124,17 @@ async fn main() -> Result<()> {
     let uses_workflows = octo::uses_workflows(token.clone(), owner.clone(), repo_name.clone()).await.unwrap();
 
     calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
+
+    let repo2 = octo::get_repo(token.clone(), "rust-lang".into(), "rust".into()).await.unwrap();
+    info!("Retrieved {}", repo2.name);
+
+    writeln!(handle_lock, "{:#?}", repo2.license);
+
+    let mut resp = octo::get_license(token.clone(), "rust-lang".into(), "rust".into()).await;
+    let data_layer = resp.get_mut("data").expect("Data key not found");
+    let repository_layer = data_layer.get_mut("repository").expect("Repository key not found");
+    let license_layer = repository_layer.get_mut("licenseInfo").expect("License key not found");
+    calc_license::calc_licenses(license_layer.get("key").unwrap().to_string());
 
     Ok(())
 }

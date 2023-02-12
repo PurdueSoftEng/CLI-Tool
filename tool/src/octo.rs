@@ -232,3 +232,20 @@ pub async fn get_num_commits(token: String, owner: &str, repo: &str) -> serde_js
         Err(_) => panic!("Error with query"),
     }
 }
+
+pub async fn get_license(token: String, owner: &str, repo: &str) -> serde_json::Value
+{
+    let v = vec!["query {repository(owner: \"", owner, "\", name: \"", repo, "\") { licenseInfo {key name spdxId url}}}"];
+
+    let str: String = v.concat();
+
+    println!("{}", str);
+
+    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+
+    match octo.graphql(&str).await
+    {
+        Ok(json) => json,
+        Err(_) => panic!("Error with query"),
+    }
+}

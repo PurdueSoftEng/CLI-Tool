@@ -113,18 +113,6 @@ async fn main() -> Result<()> {
     let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await;
     //info!("Retrieved {}", repo.name);
 
-    let t = calc_responsive_maintainer::calc_commit_bin_size(0.1, repo.clone());
-    let binned_issues = octo::get_issues(token.clone(), owner.clone(), repo_name.clone(), t as i64).await.unwrap();
-    let average_duration: f64 = calc_responsive_maintainer::get_avg_issue_duration(binned_issues);
-    let commit_pages = octo::get_all_commits(token.clone(), owner.clone(), repo_name.clone()).await.unwrap();
-    //let temp = calc_responsive_maintainer::calc_duration_between_first_and_last_commit(commit_pages.clone());
-    //let t = octo::get_duration_between_first_and_last_commit(token.clone(), owner.into(), repo_name.into()).await.unwrap();
-    //let t = 0.0;
-    let responsive_maintainer_summation: f64 = calc_responsive_maintainer::calc_responsive_maintainer_summation(commit_pages, t);
-    let uses_workflows = octo::uses_workflows(token.clone(), owner.clone(), repo_name.clone()).await.unwrap();
-
-    let responsive_scroe = calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
-
     let mut resp = octo::get_license(token.clone(), owner.clone().as_str(), repo_name.clone().as_str()).await;
     let data_layer = resp.get_mut("data").expect("Data key not found");
     let repository_layer = data_layer.get_mut("repository").expect("Repository key not found");
@@ -141,4 +129,21 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+#[cfg(test)]
+mod tests {
+    use crate::calc_responsive_maintainer::calc_responsive_maintainer;
+
+    use super::*;
+
+    #[test]
+    fn test_calc_responsive_maintainer() {
+        let owner = "cloudinary";
+        let repo_name = "cloudinary_npm";
+        let expected_output = 0.0;
+        let token: String = std::env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
+
+        let result = calc_responsive_maintainer::calc_responsive_maintainer(0.0, 0.0);
+        assert_eq!(result, expected_output);
+    }
+}
 

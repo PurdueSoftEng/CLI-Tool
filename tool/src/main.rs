@@ -135,13 +135,15 @@ async fn main() -> Result<()> {
         let data_layer = resp.get_mut("data").expect("Data key not found");
         let repository_layer = data_layer.get_mut("repository").expect("Repository key not found");
         let license_layer = repository_layer.get_mut("licenseInfo").expect("License key not found");
-        if license_layer.get("key").is_some()
+        if license_layer.is_null()
         {
-            let license_score = calc_license::calc_licenses(license_layer.get("key").unwrap().to_string()).await;
+            //let license_score = calc_license::calc_licenses(license_layer.get("key").unwrap().to_string()).await;
+            let license_score = 0;
         }
         else
         {
-            let license_score = 0;
+            let license_score = calc_license::calc_licenses(license_layer.get("key").unwrap().to_string()).await;
+            //let license_score = 0;
         }
     }
 

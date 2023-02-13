@@ -3,8 +3,7 @@ extern crate octocrab;
 use serde_json;
 
 use octocrab::{Octocrab, Page, Result, models::{self, repos::RepoCommit}, params};
-use octocrab::{tokio::net::windows::named_pipe::PipeEnd::Client, Error};
-use octocrab::{Client, Error};
+use tokio::net::windows::named_pipe::PipeEnd::Client;
 use std::error::Error;
 use chrono::{Duration, Utc, NaiveDate};
 
@@ -13,8 +12,7 @@ pub fn init_octo(token: String) -> Result<Octocrab, octocrab::Error>
     (Octocrab::builder().personal_token(token).build())
 }
 
-pub async fn get_repo(token: String, owner: String, repo: String) -> Result<octocrab::models::Repository, ()> {
-    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+pub async fn get_repo(octo: Octocrab, owner: String, repo: String) -> Result<octocrab::models::Repository, ()> {
     let repo = match octo.repos(owner, repo).get().await {
         Ok(repo) => repo,
         Err(_) => return Err(()),
@@ -238,13 +236,13 @@ pub async fn get_num_commits(token: String, owner: &str, repo: &str) -> serde_js
 // This function returns a vector of tuples. Each tuple contains a contrubutor, the number of
 // contributions they made, and the percentage of total contributions that they made. This
 // vector saved as 'contributors' which is a vector of tuples. It is saved as the result.
-pub async fn get_contributors_with_percentages(token: String, owner: String, repo: String) -> Result<Vec<(octocrab::models::repos::Contributor, i32, f32)>, OctocrabError> {
+pub async fn get_contributors_with_percentages(token: String, owner: String, repo: String) -> Result<Vec<(octocrab::models::repos::Contributor, i32, f32)>, octocrab::Error> {
     let octo = Octocrab::builder().personal_token(token).build().unwrap();
-    let contributors = octo.repos(owner, repo).contributors().list().send().await?;
+    let contributors = octo.repos(owner, repo).list_contributors().send().await?;
     let mut contributor_list = vec![];
 
     for contributor in contributors.items {
-        contributor_list.push((contributor, contributor.contributions));
+        contributor_list.push((contributor.clone(), contributor.contributions));
     }
 
     let total_contributions: i32 = contributor_list.iter().map(|(_, contributions)| *contributions).sum();
@@ -252,7 +250,7 @@ pub async fn get_contributors_with_percentages(token: String, owner: String, rep
 
     for (contributor, contributions) in contributor_list {
         let percentage = (contributions as f32 / total_contributions as f32) * 100.0;
-        result.push((contributor, contributions, percentage));
+        result.push((contributor.clone(), contributions, percentage));
     }
 
     Ok(result)
@@ -262,36 +260,13 @@ pub async fn get_contributors_with_percentages(token: String, owner: String, rep
 // the ramp up score. A README allows others to get versed in a project and learn what
 // its about. If there is a README the repository will recieve a score of 1. If not
 // it will get a score of 0.
-pub async fn has_readme(repo: &str, client: &Client) -> Result<i32, Error> {
-    let file_list_url = format!("/repos/{}/git/trees/master?recursive=1", repo);
-    let file_list_response = client
-        .get(file_list_url)
-        .send()
-        .await?;
-
-    let file_list_content = file_list_response.json::<serde_json::Value>().await?;
-    let files = file_list_content["tree"].as_array().unwrap();
-
-    for file in files {
-        let path = file["path"].as_str().unwrap();
-        if path == "README.md" {
-            return Ok(1);
-        }
-    }
-
-    Ok(0)
-}
-
-pub async fn check_multiple_readmes(repo: &str, client: &Client) -> Result<i32, Error> {
-    let contents_url = format!("/repos/{}/contents/", repo);
-    let contents_response = client.get(contents_url).send().await?;
-
-    let contents = contents_response.json::<Vec<serde_json::Value>>().await?;
+pub async fn has_readme(octo: Octocrab, owner: String, repo: String) -> Result<i32, octocrab::Error> {
+    let mut contents = octo.repos(owner, repo).get_content().send().await.unwrap();
 
     let mut readme_count = 0;
 
-    for content in contents {
-        let name = content["name"].as_str().unwrap();
+    for content in contents.take_items() {
+        let name = content.name.as_str();
         if name.to_lowercase().starts_with("readme") {
             readme_count += 1;
         }
@@ -304,31 +279,56 @@ pub async fn check_multiple_readmes(repo: &str, client: &Client) -> Result<i32, 
     }
 }
 
-pub async fn are_all_issues_closed(repo: &str, client: &Client) -> Result<i32, Error> {
-    let issues_url = format!("/repos/{}/issues", repo);
-    let issues_response = client.get(issues_url).send().await?;
+pub async fn check_multiple_readmes(octo: Octocrab, owner: String, repo: String) -> Result<i32, octocrab::Error> {
+    /*let contents_url = format!("/repos/{}/{}/contents/", owner, repo);
+    let contents_response = octo.get(contents_url, None::<&()>).send().await?;
 
-    let issues = issues_response.json::<Vec<serde_json::Value>>().await?;
+    let contents = contents_response.json::<Vec<serde_json::Value>>().await?;*/
 
-    for issue in issues {
-        let state = issue["state"].as_str().unwrap();
-        if state != "closed" {
-            return Ok(0);
+    let mut contents = octo.repos(owner, repo).get_content().send().await.unwrap();
+
+    let mut readme_count = 0;
+
+    for content in contents.take_items() {
+        let name = content.name.as_str();
+        if name.to_lowercase().starts_with("readme") {
+            readme_count += 1;
         }
     }
 
+    if readme_count > 1 {
+        Ok(1)
+    } else {
+        Ok(0)
+    }
+}
+
+pub async fn are_all_issues_closed(octo: Octocrab, owner: String, repo: String) -> Result<i32, octocrab::Error> {
+    /*let issues_url = format!("/repos/{}/issues", repo);
+    let issues_response = octo.get(issues_url, None::<&()>).send().await?;
+
+    let issues = issues_response.json::<Vec<serde_json::Value>>().await?;*/
+
+    let issues = octo.issues(owner, repo).list().state(params::State::Closed).send().await.unwrap();
+
+    if issues.total_count > Some(1)
+    {
+        return Ok(0);
+    }
     Ok(1)
 }
 
 // has tests (1/3 weight)
-pub async fn has_testing_suite(repo: &str, client: &Client) -> Result<i32, Error> {
-    let contents_url = format!("/repos/{}/contents", repo);
-    let contents_response = client.get(contents_url).send().await?;
+pub async fn has_testing_suite(octo: Octocrab, owner: String, repo: String) -> Result<i32, octocrab::Error> {
+    /*let contents_url = format!("/repos/{}/contents", repo);
+    let contents_response = octo.get(contents_url, None::<&()>).send().await?;
 
-    let contents = contents_response.json::<Vec<serde_json::Value>>().await?;
+    let contents = contents_response.json::<Vec<serde_json::Value>>().await?;*/
 
-    for content in contents {
-        let content_name = content["name"].as_str().unwrap();
+    let mut contents = octo.repos(owner, repo).get_content().send().await.unwrap();
+
+    for content in contents.take_items() {
+        let content_name = content.name.as_str();
         if content_name == "tests" {
             return Ok(1);
         }
@@ -338,13 +338,15 @@ pub async fn has_testing_suite(repo: &str, client: &Client) -> Result<i32, Error
 }
 
 // check number of releases (1/3 weight)
-pub async fn check_number_of_releases(repo: &str, client: &Client) -> Result<i32, Error> {
-    let releases_url = format!("/repos/{}/releases", repo);
-    let releases_response = client.get(releases_url).send().await?;
+pub async fn check_number_of_releases(octo: Octocrab, owner: String, repo: String) -> Result<i32, octocrab::Error> {
+    /*let releases_url = format!("/repos/{}/releases", repo);
+    let releases_response:  = octo.get(releases_url, None::<&()>).await;
 
-    let releases = releases_response.json::<Vec<serde_json::Value>>().await?;
+    let releases = releases_response.json::<Vec<serde_json::Value>>().await?;*/
 
-    if releases.len() > 10 {
+    let releases = octo.repos(owner, repo).releases().list().send().await.unwrap();
+
+    if releases.total_count > Some(10) {
         Ok(1)
     } else {
         Ok(0)

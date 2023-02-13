@@ -41,16 +41,6 @@ async fn main() -> Result<()> {
     // let t = calc_responsive_maintainer::calc_commit_bin_size(0.1, repo.clone());
     // let binned_issues = octo::get_issues(token.clone(), owner.into(), repo_name.into(), t as i64).await.unwrap();
     // let average_duration: f64 = calc_responsive_maintainer::get_avg_issue_duration(binned_issues);
-    let score = octo::calculate_responsive_maintainer_ness(token, owner.into(), repo_name.into()).await.unwrap();
-    println!("score: {}", score);
-
-    //let commit_pages = octo::get_all_commits(token.clone(), owner.into(), repo_name.into()).await.unwrap();
-
-    //let responsive_maintainer_summation: f64 = calc_responsive_maintainer::calc_responsive_maintainer_summation(commit_pages, t);
-
-    //let uses_workflows = octo::uses_workflows(token.clone(), owner.into(), repo_name.into()).await.unwrap();
-
-    //calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
 
 
     let token: String = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
@@ -71,27 +61,18 @@ async fn main() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use crate::calc_responsive_maintainer::calc_responsive_maintainer;
+
     use super::*;
 
     #[test]
     fn test_calc_responsive_maintainer() {
-        // let repo = octo::get_repo(token.clone(), owner.into(), repo_name.into()).await.unwrap();
-        // let t = calc_responsive_maintainer::calc_commit_bin_size(0.1, repo.clone());
-        // let binned_issues = octo::get_issues(token.clone(), owner.into(), repo_name.into(), t as i64).await.unwrap();
-        // let average_duration: f64 = calc_responsive_maintainer::get_avg_issue_duration(binned_issues);
-        // let commit_pages = octo::get_all_commits(token.clone(), owner.into(), repo_name.into()).await.unwrap();
+        let owner = "cloudinary";
+        let repo_name = "cloudinary_npm";
+        let expected_output = 0.0;
+        let token: String = std::env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
 
-        // let responsive_maintainer_summation: f64 = calc_responsive_maintainer::calc_responsive_maintainer_summation(commit_pages, t);
-        // let uses_workflows = octo::uses_workflows(token.clone(), owner.into(), repo_name.into()).await.unwrap();
-
-        // calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
-
-        let uses_workflows = true;
-        let responsive_maintainer_summation = 100.0;
-        let average_duration = 10.0;
-
-        let expected_output = 100.0;
-        let result = calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
+        let result = calc_responsive_maintainer::calc_responsive_maintainer(0.0, 0.0);
         assert_eq!(result, expected_output);
     }
 }

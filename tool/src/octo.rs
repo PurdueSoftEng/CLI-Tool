@@ -4,7 +4,7 @@ use serde_json;
 
 use octocrab::{Octocrab, Page, Result, models::{self, repos::RepoCommit}, params};
 use std::error::Error;
-use chrono::{Duration, Utc, NaiveDate};
+use chrono::{Duration, Utc, NaiveDate, DateTime};
 
 pub fn init_octo(token: String) -> Result<Octocrab, octocrab::Error>
 {

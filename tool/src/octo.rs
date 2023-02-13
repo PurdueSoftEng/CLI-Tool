@@ -1,7 +1,7 @@
 extern crate octocrab;
 use octocrab::{Octocrab, Page, Result, models::{self, repos::RepoCommit}, params};
 use std::error::Error;
-use chrono::{Duration, Utc, NaiveDate};
+use chrono::{Duration, Utc, NaiveDate, DateTime};
 
 pub fn init_octo(token: String) -> Result<Octocrab, octocrab::Error>
 {
@@ -210,4 +210,45 @@ pub async fn get_duration_between_first_and_last_commit(token: String, owner: St
     let elapsed_days = duration.num_days() as f64;
     
     Ok(elapsed_days)
+}
+
+pub async fn calculate_responsive_maintainer_ness(token: String, owner: String, repo: String) -> Result<f64> {
+    let octo = Octocrab::builder().personal_token(token.clone()).build().unwrap();
+    let mut page= octo.repos(owner.clone(), repo.clone()).list_commits().send().await?;
+
+    let mut all_issues = get_issues(token.clone(), owner, repo, 100).await.unwrap();
+
+    let mut total_time_to_response: f64 = 0.0;
+    let mut total_issues: i32 = 0;
+
+    for bin in all_issues {
+        for issue in bin{
+            let created_at = issue.created_at;
+            let closed_at = issue.closed_at;
+            if closed_at.is_some(){
+                let time_to_response = closed_at.unwrap() - created_at;
+                    match time_to_response.to_std() {
+                        Ok(duration) => {
+                            total_time_to_response += duration.as_secs_f64();
+                            total_issues += 1;
+                        },
+                        Err(out_of_range_error) => continue,
+                    }
+                }
+                }
+            }
+
+    let average_time_to_response = total_time_to_response / total_issues as f64;
+    println!("average_time_to_response {}", average_time_to_response);
+    let max_time_to_response = 30 * 24 * 60 * 60;  // 30 days in seconds
+    println!("max_time_to_response {}", max_time_to_response);
+
+    let responsive_maintainer_ness = (1.0 - (average_time_to_response / max_time_to_response as f64).abs()).abs();
+    let responsive_maintainer_ness = ((average_time_to_response / max_time_to_response as f64).abs()).abs();
+
+    println!("average_time_to_response / max_time_to_response {}", average_time_to_response / max_time_to_response as f64);
+    println!("responsive_maintainer_ness {}", responsive_maintainer_ness);
+
+
+    Ok(responsive_maintainer_ness.max(0.0).min(1.0))
 }

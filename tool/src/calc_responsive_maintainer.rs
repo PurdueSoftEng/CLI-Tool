@@ -25,16 +25,6 @@ pub fn get_avg_issue_duration(binned_issues:Vec<Vec<octocrab::models::issues::Is
     return average;
 }
 
-// pub fn calc_responsive_maintainer_summation(binned_commits:Vec<Vec<RepoCommit>>, t:f64) -> f64{
-//     let mut total:f64 = 0.0;
-//     for bin in binned_commits{
-//         println!("bin");
-//         total += 1.0/t * bin.len() as f64;
-//     }
-
-//     total
-// }
-
 pub fn calc_responsive_maintainer_summation(commits:Vec<RepoCommit>, t:f64) -> f64{
     let mut total:f64 = 0.0;
 
@@ -52,6 +42,7 @@ pub fn calc_responsive_maintainer(weight_factor:f64, continuous_integration:bool
 
     let mut score:f64 = 0.0;
     score = weight_factor * integration + summation + (1.0/avg_time);
+    score = weight_factor * integration + (avg_time);
 
     let max_score = 100.0;
     if score > 100.0{
@@ -95,8 +86,3 @@ pub fn calc_commit_bin_size(k: f64, repo:Repository)-> f64{
     t
 }
 
-pub fn calc_duration_between_first_and_last_commit(commits:Vec<RepoCommit>) -> f64{
-    println!("commits stat: {:#?}", commits[0].sha);
-    
-    0.0
-}

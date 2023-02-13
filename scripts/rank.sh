@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd ../tool
-GITHUB_TOKEN=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
+GITHUB_TOKEN=
 echo $GITHUB_TOKEN
 if [ -e "run.log" ]; then
     rm run.log

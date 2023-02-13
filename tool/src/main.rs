@@ -126,24 +126,28 @@ async fn main() -> Result<()> {
     let mut repos_list = read_github_repos_from_file(&args.path);
     for repository in repos_list.as_mut_slice()
     {
-        let repo_info = extract_owner_and_repo(repository.url.as_str());
-        let owner = repo_info.clone().unwrap().0;
-        let repo_name = repo_info.clone().unwrap().1;
-        let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await;
+        writeln!(handle_lock, "{}", &repository.url.as_str());
+        let repo_info = extract_owner_and_repo(&repository.url.as_str());
+        if !repo_info.is_none()
+        {
+            let owner = repo_info.clone().unwrap().0;
+            let repo_name = repo_info.clone().unwrap().1;
+            let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await;
 
-        let mut resp = octo::get_license(token.clone(), owner.clone().as_str(), repo_name.clone().as_str()).await;
-        let data_layer = resp.get_mut("data").expect("Data key not found");
-        let repository_layer = data_layer.get_mut("repository").expect("Repository key not found");
-        let license_layer = repository_layer.get_mut("licenseInfo").expect("License key not found");
-        if license_layer.is_null()
-        {
-            //let license_score = calc_license::calc_licenses(license_layer.get("key").unwrap().to_string()).await;
-            let license_score = 0;
-        }
-        else
-        {
-            let license_score = calc_license::calc_licenses(license_layer.get("key").unwrap().to_string()).await;
-            //let license_score = 0;
+            let mut resp = octo::get_license(token.clone(), owner.clone().as_str(), repo_name.clone().as_str()).await;
+            let data_layer = resp.get_mut("data").expect("Data key not found");
+            let repository_layer = data_layer.get_mut("repository").expect("Repository key not found");
+            let license_layer = repository_layer.get_mut("licenseInfo").expect("License key not found");
+            if license_layer.is_null()
+            {
+                //let license_score = calc_license::calc_licenses(license_layer.get("key").unwrap().to_string()).await;
+                let license_score = 0;
+            }
+            else
+            {
+                let license_score = calc_license::calc_licenses(license_layer.get("key").unwrap().to_string()).await;
+                //let license_score = 0;
+            }
         }
     }
 

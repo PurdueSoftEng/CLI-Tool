@@ -126,7 +126,7 @@ async fn main() -> Result<()> {
     let mut repos_list = read_github_repos_from_file(&args.path);
     for repository in repos_list.as_mut_slice()
     {
-        let repo_info = extract_owner_and_repo(&repository.url);
+        let repo_info = extract_owner_and_repo(repository.url.as_str());
         let owner = repo_info.clone().unwrap().0;
         let repo_name = repo_info.clone().unwrap().1;
         let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await;

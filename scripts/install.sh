@@ -1,9 +1,11 @@
 #!/bin/bash
 
 # Mode 1: Install Dependencies 
-if [ -e "$filename" ]; then
+cd ../tool
+if [ -e "build.log" ]; then
     rm build.log
 fi
+cargo clean --quiet
 cargo build > build.log 2>&1
 
 if [ $? -eq 0 ]; then

@@ -11,13 +11,13 @@ pub fn init_octo(token: String) -> Result<Octocrab, octocrab::Error>
     (Octocrab::builder().personal_token(token).build())
 }
 
-pub async fn get_repo(token: String, owner: String, repo: String) -> Result<octocrab::models::Repository, ()> {
+pub async fn get_repo(token: String, owner: String, repo_name: String) -> octocrab::models::Repository {
     let octo = Octocrab::builder().personal_token(token).build().unwrap();
-    let repo = match octo.repos(owner, repo).get().await {
+    match octo.repos(owner, repo_name.clone()).get().await 
+    {
         Ok(repo) => repo,
-        Err(_) => return Err(()),
-    };
-    Ok(repo)
+        Err(_) => panic!("Could not retrieve {}", repo_name.as_str()),
+    }
 }
 
 pub async fn get_issue(token: String, owner: String, repo: String) -> Result<Page<octocrab::models::issues::Issue>, octocrab::Error> {

@@ -110,7 +110,7 @@ async fn main() -> Result<()> {
     let repo_info = extract_owner_and_repo(repos_list.first().unwrap().url.as_str());
     let owner = repo_info.clone().unwrap().0;
     let repo_name = repo_info.clone().unwrap().1;
-    let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await.unwrap();
+    let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await;
     //info!("Retrieved {}", repo.name);
 
     let t = calc_responsive_maintainer::calc_commit_bin_size(0.1, repo.clone());
@@ -123,18 +123,20 @@ async fn main() -> Result<()> {
     let responsive_maintainer_summation: f64 = calc_responsive_maintainer::calc_responsive_maintainer_summation(commit_pages, t);
     let uses_workflows = octo::uses_workflows(token.clone(), owner.clone(), repo_name.clone()).await.unwrap();
 
-    calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
+    let responsive_scroe = calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
 
-    let repo2 = octo::get_repo(token.clone(), "rust-lang".into(), "rust".into()).await.unwrap();
-    info!("Retrieved {}", repo2.name);
-
-    writeln!(handle_lock, "{:#?}", repo2.license);
-
-    let mut resp = octo::get_license(token.clone(), "rust-lang".into(), "rust".into()).await;
+    let mut resp = octo::get_license(token.clone(), owner.clone().as_str(), repo_name.clone().as_str()).await;
     let data_layer = resp.get_mut("data").expect("Data key not found");
     let repository_layer = data_layer.get_mut("repository").expect("Repository key not found");
     let license_layer = repository_layer.get_mut("licenseInfo").expect("License key not found");
-    calc_license::calc_licenses(license_layer.get("key").unwrap().to_string());
+    if license_layer.get("key").is_some()
+    {
+        let license_score = calc_license::calc_licenses(license_layer.get("key").unwrap().to_string()).await;
+    }
+    else
+    {
+        let license_score = 0;
+    }
 
     Ok(())
 }

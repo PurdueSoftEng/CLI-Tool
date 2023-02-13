@@ -18,6 +18,12 @@ use std::cmp::Ordering;
 mod octo;
 mod calc_responsive_maintainer;
 
+extern crate serde;
+extern crate serde_json;
+
+use std::fs::File;
+use std::io::prelude::*;
+
 #[derive(Parser)]
 struct Cli {
     path: String,
@@ -30,6 +36,11 @@ struct CustomError(String);
 struct GithubRepo {
     url: String,
     scores: Vec<i16>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Output {
+    //NEED STRUCTURE
 }
 
 impl GithubRepo {
@@ -94,6 +105,19 @@ fn extract_owner_and_repo(url: &str) -> Option<(String, String)> {
     Some((captures[1].to_string(), captures[2].to_string()))
 }
 
+
+fn output_file(filename: &str, outputs: &[Output]) -> Result<(), std::io::Error> {
+    let mut file = File::create(filename)?;
+
+    for output in outputs {
+        let json = serde_json::to_string(output).unwrap();
+
+        file.write_all(json.as_bytes())?;
+        file.write_all(b"\n")?;
+    }
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
@@ -123,7 +147,25 @@ async fn main() -> Result<()> {
 
     calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
 
+    let outputs = vec![
+        Output {
+            name: "",
+        },
+        Output {
+            name: "",
+        },
+    ];
+
+    //name file
+    let filename = "metrics.ndjson";
+
+    if let Err(e) = output_file(filename, &outputs) {
+        println!("Error creating NDJSON output file: {}", e);
+    }
+
     Ok(())
+
+    
 }
 
 

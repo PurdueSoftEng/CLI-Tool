@@ -21,7 +21,6 @@ mod calc_responsive_maintainer;
 extern crate serde;
 extern crate serde_json;
 
-use std::fs::File;
 use std::io::prelude::*;
 
 #[derive(Parser)]
@@ -40,7 +39,12 @@ struct GithubRepo {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Output {
-    //NEED STRUCTURE
+    URL: String,
+    NET_SCORE: u32,
+    RAMP_UP_SCORE: String,
+    CORRECTNESS_SCORE: u32,
+    RESPONSIVE_MAINTAINER_SCORE: u32,
+    LICENSE_SCORE: u32,
 }
 
 impl GithubRepo {
@@ -106,16 +110,11 @@ fn extract_owner_and_repo(url: &str) -> Option<(String, String)> {
 }
 
 
-fn output_file(filename: &str, outputs: &[Output]) -> Result<(), std::io::Error> {
-    let mut file = File::create(filename)?;
-
-    for output in outputs {
-        let json = serde_json::to_string(output).unwrap();
-
-        file.write_all(json.as_bytes())?;
-        file.write_all(b"\n")?;
+fn create_output(metrics: &[Output]) {
+    for metric in metrics {
+        let json = serde_json::to_string(metric).unwrap();
+        println!("{}", json);
     }
-    Ok(())
 }
 
 #[tokio::main]
@@ -147,21 +146,18 @@ async fn main() -> Result<()> {
 
     calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
 
-    let outputs = vec![
+    let metrics = vec![
         Output {
-            name: "",
-        },
-        Output {
-            name: "",
+            URL: "John Doe".to_string(),
+            NET_SCORE: 30,
+            RAMP_UP_SCORE: String,
+            CORRECTNESS_SCORE: u32,
+            RESPONSIVE_MAINTAINER_SCORE: u32,
+            LICENSE_SCORE: u32,
         },
     ];
 
-    //name file
-    let filename = "metrics.ndjson";
-
-    if let Err(e) = output_file(filename, &outputs) {
-        println!("Error creating NDJSON output file: {}", e);
-    }
+    create_output(&metrics);
 
     Ok(())
 

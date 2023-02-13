@@ -148,7 +148,7 @@ async fn main() -> Result<()> {
 
     let metrics = vec![
         Output {
-            URL: "John Doe".to_string(),
+            URL: string,
             NET_SCORE: 30,
             RAMP_UP_SCORE: String,
             CORRECTNESS_SCORE: u32,

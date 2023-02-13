@@ -43,7 +43,7 @@ struct Output {
     NET_SCORE: u32,
     RAMP_UP_SCORE: String,
     CORRECTNESS_SCORE: u32,
-    RESPONSIVE_MAINTAINER_SCORE: u32,
+    RESPONSIVE_MAINTAINER_SCORE: f64,
     LICENSE_SCORE: u32,
 }
 
@@ -152,7 +152,7 @@ async fn main() -> Result<()> {
             NET_SCORE: 30,
             RAMP_UP_SCORE: String,
             CORRECTNESS_SCORE: u32,
-            RESPONSIVE_MAINTAINER_SCORE: u32,
+            RESPONSIVE_MAINTAINER_SCORE: responsive_maintainer_summation,
             LICENSE_SCORE: u32,
         },
     ];

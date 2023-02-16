@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Mode 1: Install Dependencies 
-cd ../tool
+# Mode 1: Install Dependencies
+git submodule update --init --recursive --quiet > git.log 2>&1
+cd tool
 if [ -e "build.log" ]; then
     rm build.log
 fi

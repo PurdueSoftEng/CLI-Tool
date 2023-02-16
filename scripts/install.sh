@@ -9,7 +9,7 @@ cargo clean --quiet
 cargo build > log/build.log 2>&1
 
 if [ $? -eq 0 ]; then
-  deps=$(grep -o "Compiling" build.log | wc -l)
+  deps=$(grep -o "Compiling" log/build.log | wc -l)
   echo "Number of dependencies installed: $deps"
 else
   echo "Build failed. Check build.log for more information."

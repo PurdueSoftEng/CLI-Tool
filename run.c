@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
             exit(0); // Exit 0 on succcess
         }
         else { // file path
-            char cmd[1000] = "./scripts/rank.sh ";
+            char cmd[1000] = "./scripts/rank.sh ../";
 	    strcat(cmd, argv[1]); 
 	    int rankOutput = system(cmd);   // Call rank.sh
             //printf(rankOutput); 

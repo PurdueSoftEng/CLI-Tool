@@ -5,7 +5,7 @@ use log::{info, warn, debug, LevelFilter};
 use std::io::{self, Write};
 use anyhow::{Context, Result};
 
-use serde_json::json;
+use serde_json::{json, Value, Map};
 
 use dotenv::dotenv;
 use std::env;
@@ -47,16 +47,6 @@ struct GithubRepo {
     url: String,
     scores: Vec<f32>,
 }
-
-// #[derive(Serialize, Deserialize, Debug)]
-// struct Output {
-//     URL: String,
-//     NET_SCORE: u32,
-//     RAMP_UP_SCORE: String,
-//     CORRECTNESS_SCORE: u32,
-//     RESPONSIVE_MAINTAINER_SCORE: f64,
-//     LICENSE_SCORE: u32,
-// }
 
 impl GithubRepo {
     fn new(url: String, scores: Vec<f32>) -> Self {
@@ -144,14 +134,6 @@ fn extract_owner_and_repo(url: &str) -> Option<(String, String)> {
     Some((captures[1].to_string(), captures[2].to_string()))
 }
 
-
-// fn create_output(metrics: &[Output]) {
-//     for metric in metrics {
-//         let json = serde_json::to_string(metric).unwrap();
-//         println!("{}", json);
-//     }
-// }
-
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
@@ -164,6 +146,8 @@ async fn main() -> Result<()> {
     let repo_info = extract_owner_and_repo(repos_list.first().unwrap().url.as_str());
     let owner = repo_info.clone().unwrap().0;
     let repo_name = repo_info.clone().unwrap().1;
+    println!("temp");
+
     let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await;
 
     for mut repository in repos_list{
@@ -174,7 +158,7 @@ async fn main() -> Result<()> {
             repository.license_set(score);
         }
         
-        create_ndjson("temp", repository.overall(), repository.rampup(), repository.correct(), repository.bus(), repository.responsive(), repository.license());
+        create_ndjson(repository.url.as_str(), repository.overall(), repository.rampup(), repository.correct(), repository.bus(), repository.responsive(), repository.license());
     }
 
     Ok(())
@@ -223,17 +207,75 @@ mod tests {
     }
 }
 
-fn create_ndjson(url: &str, net_score: f32, ramp_up_score: f32, correctness_score: f32, bus_factor_score: f32, responsive_maintainer_score: f32, license_score: f32) {
-    let json = json!({
-        "URL": url,
-        "NET_SCORE": net_score,
-        "RAMP_UP_SCORE": ramp_up_score,
-        "CORRECTNESS_SCORE": correctness_score,
-        "BUS_FACTOR_SCORE": bus_factor_score,
-        "RESPONSIVE_MAINTAINER_SCORE": responsive_maintainer_score,
-        "LICENSE_SCORE": license_score
-    });
+// fn create_ndjson(url: &str, net_score: f32, ramp_up_score: f32, correctness_score: f32, bus_factor_score: f32, responsive_maintainer_score: f32, license_score: f32) {
+//     let json = json!({
+//         "URL": url,
+//         "NET_SCORE": net_score,
+//         "RAMP_UP_SCORE": ramp_up_score,
+//         "CORRECTNESS_SCORE": correctness_score,
+//         "BUS_FACTOR_SCORE": bus_factor_score,
+//         "RESPONSIVE_MAINTAINER_SCORE": responsive_maintainer_score,
+//         "LICENSE_SCORE": license_score
+//     });
 
-    let ndjson = json.to_string();
+//     let ndjson = json.to_string();
+//     println!("{}", ndjson);
+// }
+
+// fn create_ndjson(url: &str, net_score: f32, ramp_up_score: f32, correctness_score: f32, bus_factor_score: f32, responsive_maintainer_score: f32, license_score: f32) {
+//     let mut map = Map::new();
+//     map.insert("URL".to_string(), Value::String(url.to_string()));
+//     map.insert("NET_SCORE".to_string(), Value::Number(serde_json::Number::from(net_score)));
+//     map.insert("RAMP_UP_SCORE".to_string(), Value::Number(serde_json::Number::from(ramp_up_score)));
+//     map.insert("CORRECTNESS_SCORE".to_string(), Value::Number(serde_json::Number::from(correctness_score)));
+//     map.insert("BUS_FACTOR_SCORE".to_string(), Value::Number(serde_json::Number::from(bus_factor_score)));
+//     map.insert("RESPONSIVE_MAINTAINER_SCORE".to_string(), Value::Number(serde_json::Number::from(responsive_maintainer_score)));
+//     map.insert("LICENSE_SCORE".to_string(), Value::Number(serde_json::Number::from(license_score)));
+
+//     let json = Value::Object(map);
+//     let ndjson = serde_json::to_string(&json).unwrap();
+//     println!("{}", ndjson);
+// }
+
+use serde::ser::{Serialize, SerializeMap, Serializer};
+
+struct NdjsonSerializer<'a> {
+    url: &'a str,
+    net_score: f32,
+    ramp_up_score: f32,
+    correctness_score: f32,
+    bus_factor_score: f32,
+    responsive_maintainer_score: f32,
+    license_score: f32,
+}
+
+impl<'a> Serialize for NdjsonSerializer<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(7))?;
+        map.serialize_entry("URL", self.url)?;
+        map.serialize_entry("NET_SCORE", &self.net_score)?;
+        map.serialize_entry("RAMP_UP_SCORE", &self.ramp_up_score)?;
+        map.serialize_entry("CORRECTNESS_SCORE", &self.correctness_score)?;
+        map.serialize_entry("BUS_FACTOR_SCORE", &self.bus_factor_score)?;
+        map.serialize_entry("RESPONSIVE_MAINTAINER_SCORE", &self.responsive_maintainer_score)?;
+        map.serialize_entry("LICENSE_SCORE", &self.license_score)?;
+        map.end()
+    }
+}
+
+fn create_ndjson(url: &str, net_score: f32, ramp_up_score: f32, correctness_score: f32, bus_factor_score: f32, responsive_maintainer_score: f32, license_score: f32) {
+    let serializer = NdjsonSerializer {
+        url,
+        net_score,
+        ramp_up_score,
+        correctness_score,
+        bus_factor_score,
+        responsive_maintainer_score,
+        license_score,
+    };
+    let ndjson = serde_json::to_string(&serializer).unwrap();
     println!("{}", ndjson);
 }

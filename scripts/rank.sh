@@ -2,7 +2,7 @@
 
 cd tool
 echo "$GITHUB_TOKEN"
-if [ -e "run.log" ]; then
-    rm run.log
+if [ -e "log/run.log" ]; then
+    rm log/run.log
 fi
-cargo run -- $1 > run.log 2>&1
+cargo run -- $1 > log/run.log 2>&1

@@ -1,13 +1,12 @@
 #!/bin/bash
 
 # Mode 1: Install Dependencies
-git submodule update --init --recursive --quiet > git.log 2>&1
-cd tool
-if [ -e "build.log" ]; then
-    rm build.log
+git submodule update --init --recursive --quiet > log/git.log 2>&1
+if [ -e "log/build.log" ]; then
+    rm log/build.log
 fi
 cargo clean --quiet
-cargo build > build.log 2>&1
+cargo build > log/build.log 2>&1
 
 if [ $? -eq 0 ]; then
   deps=$(grep -o "Compiling" build.log | wc -l)

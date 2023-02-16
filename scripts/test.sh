@@ -2,15 +2,15 @@
 
 cd tool
 cd tool
-if [ -e "build.log" ]; then
-    rm build.log
+if [ -e "log/test.log" ]; then
+    rm log/test.log
 fi
-cargo test > test.log 2>&1
+cargo test > log/test.log 2>&1
 
 
 if [ $? -eq 0 ]; then
-  failed=$(grep -o "FAILED" test.log | wc -l)
-  passed=$(grep -o "PASSED" test.log | wc -l)
+  failed=$(grep -o "FAILED" log/test.log | wc -l)
+  passed=$(grep -o "PASSED" log/test.log | wc -l)
   total=$failed + $passed
   echo "Total Tests: $total"
   echo "Passed Tests: $passed"

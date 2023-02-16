@@ -4,6 +4,9 @@ use clap::Parser;
 use log::{info, warn, debug, LevelFilter};
 use std::io::{self, Write};
 use anyhow::{Context, Result};
+extern crate octocrab;
+
+use octocrab::{Octocrab, Page, models::{self, repos::RepoCommit}, params};
 
 use serde_json::{json, Value, Map};
 
@@ -154,6 +157,7 @@ async fn main() -> Result<()> {
         for score in scores_list{
             repository.responsive_set(score);
             repository.license_set(score);
+            repository.rampup_set(score);
         }
         
         create_ndjson(repository.url.as_str(), repository.overall(), repository.rampup(), repository.correct(), repository.bus(), repository.responsive(), repository.license());
@@ -178,8 +182,12 @@ async fn calc_metrics(token: String, owner: String, repo: String) -> Vec<f32> {
     {
         license_score = calc_license::calc_licenses(license_layer.get("key").unwrap().to_string()).await;
     }
-
     scores_vec.push(license_score as f32);
+
+    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+
+    let ramp_up_score = ramp_up::get_weighted_score(octo, owner.clone(), repo.clone()).await.unwrap();
+    scores_vec.push(ramp_up_score as f32);
     scores_vec    
 }
 

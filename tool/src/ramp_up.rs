@@ -6,7 +6,7 @@ use crate::octo;
 // the ramp up score. A README allows others to get versed in a project and learn what
 // its about. If there is a README the repository will recieve a score of 1. If not
 // it will get a score of 0.
-async fn get_weighted_score(octo: Octocrab, owner: String, repo: String) -> Result<f64, Error> {
+pub async fn get_weighted_score(octo: Octocrab, owner: String, repo: String) -> Result<f64, Error> {
     let first = octo::has_readme(octo.clone(), owner.clone(), repo.clone()).await?;
     let second = octo::check_multiple_readmes(octo.clone(), owner.clone(), repo.clone()).await?;
 

@@ -48,15 +48,15 @@ struct GithubRepo {
     scores: Vec<f32>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Output {
-    URL: String,
-    NET_SCORE: u32,
-    RAMP_UP_SCORE: String,
-    CORRECTNESS_SCORE: u32,
-    RESPONSIVE_MAINTAINER_SCORE: f64,
-    LICENSE_SCORE: u32,
-}
+// #[derive(Serialize, Deserialize, Debug)]
+// struct Output {
+//     URL: String,
+//     NET_SCORE: u32,
+//     RAMP_UP_SCORE: String,
+//     CORRECTNESS_SCORE: u32,
+//     RESPONSIVE_MAINTAINER_SCORE: f64,
+//     LICENSE_SCORE: u32,
+// }
 
 impl GithubRepo {
     fn new(url: String, scores: Vec<f32>) -> Self {
@@ -145,12 +145,12 @@ fn extract_owner_and_repo(url: &str) -> Option<(String, String)> {
 }
 
 
-fn create_output(metrics: &[Output]) {
-    for metric in metrics {
-        let json = serde_json::to_string(metric).unwrap();
-        println!("{}", json);
-    }
-}
+// fn create_output(metrics: &[Output]) {
+//     for metric in metrics {
+//         let json = serde_json::to_string(metric).unwrap();
+//         println!("{}", json);
+//     }
+// }
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -160,18 +160,11 @@ async fn main() -> Result<()> {
     let stdout = io::stdout();
     let mut handle_lock = stdout.lock();
     let token: String = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
-    let mut octocrab_inst = octo::init_octo(token).unwrap();
-    // let owner = "MinecraftForge";
-    // let repo_name = "ForgeGradle";
     let mut repos_list = read_github_repos_from_file(&args.path);
     let repo_info = extract_owner_and_repo(repos_list.first().unwrap().url.as_str());
     let owner = repo_info.clone().unwrap().0;
     let repo_name = repo_info.clone().unwrap().1;
-    //println!("repo_info: {:#?}", repo_info);
     let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await;
-    //info!("Retrieved {}", repo.name);
-
-    //let temp = octo::get_issue_response_times(token, owner, repo_name);
 
     for mut repository in repos_list{
         let scores_list = calc_metrics(token.clone(), owner.clone(), repo_name.clone()).await;
@@ -184,12 +177,7 @@ async fn main() -> Result<()> {
         create_ndjson("temp", repository.overall(), repository.rampup(), repository.correct(), repository.bus(), repository.responsive(), repository.license());
     }
 
-
-
-    calc_responsive_maintainer::calc_responsive_maintainer(1.0, uses_workflows, responsive_maintainer_summation, average_duration);
-
     Ok(())
-
     
 }
 

@@ -234,23 +234,6 @@ pub async fn get_num_commits(token: String, owner: &str, repo: &str) -> serde_js
     }
 }
 
-pub async fn get_license(token: String, owner: &str, repo: &str) -> serde_json::Value
-{
-    let v = vec!["query {repository(owner: \"", owner, "\", name: \"", repo, "\") { licenseInfo {key name spdxId url}}}"];
-
-    let str: String = v.concat();
-
-    println!("{}", str);
-
-    let octo = Octocrab::builder().personal_token(token).build().unwrap();
-
-    match octo.graphql(&str).await
-    {
-        Ok(json) => json,
-        Err(_) => panic!("Error with query"),
-    }
-}
-
 pub async fn get_issue_response_times(token: String, owner: String, repo: String) -> Result<Vec<f64>, octocrab::Error> {
     let octo = Octocrab::builder().personal_token(token.clone()).build().unwrap();
     let mut page= octo.repos(owner.clone(), repo.clone()).list_commits().send().await?;
@@ -279,29 +262,13 @@ pub async fn get_issue_response_times(token: String, owner: String, repo: String
 
 
     let average_time_to_response = total_time_to_response / total_issues as f64;
-    println!("average_time_to_response {}", average_time_to_response);
-    // println!("average_time_to_response {}", average_time_to_response);
     let max_time_to_response = 30 * 24 * 60 * 60;  // 30 days in seconds
-    println!("max_time_to_response {}", max_time_to_response);
-    // println!("max_time_to_response {}", max_time_to_response);
-
-    //let responsive_maintainer_ness = (1.0 - (average_time_to_response / max_time_to_response as f64).abs()).abs();
-    // println!("responsive_maintainerness {}", responsive_maintainer_ness);
-
     let responsive_maintainer_ness = ((average_time_to_response / max_time_to_response as f64).abs()).abs();
 
-    println!("average_time_to_response / max_time_to_response {}", average_time_to_response / max_time_to_response as f64);
-    println!("responsive_maintainer_ness {}", responsive_maintainer_ness);
-    // println!("average_time_to_response / max_time_to_response {}", average_time_to_response / max_time_to_response as f64);
-    // println!("responsive_maintainer_ness {}", responsive_maintainer_ness);
-
-
-    //Ok(responsive_maintainer_ness.max(0.0).min(1.0))
     let mut response_vec = Vec::new();
     response_vec.push(average_time_to_response);
     response_vec.push(max_time_to_response as f64);
 
-    //Ok(responsive_maintainer_ness.max(0.0).min(1.0))
     Ok(response_vec)
 }
 
@@ -320,84 +287,30 @@ pub async fn get_license(token: String, owner: &str, repo: &str) -> serde_json::
         Ok(json) => json,
         Err(_) => panic!("Error with query"),
     }
-}
-
-pub async fn get_issue_response_times(token: String, owner: String, repo: String) -> Result<Vec<f64>, octocrab::Error> {
-    let octo = Octocrab::builder().personal_token(token.clone()).build().unwrap();
-    let mut page= octo.repos(owner.clone(), repo.clone()).list_commits().send().await?;
-
-    let mut all_issues = get_issues(token.clone(), owner, repo, 100).await.unwrap();
-
-    let mut total_time_to_response: f64 = 0.0;
-    let mut total_issues: i32 = 0;
-
-    for bin in all_issues {
-        for issue in bin{
-            let created_at = issue.created_at;
-            let closed_at = issue.closed_at;
-            if closed_at.is_some(){
-                let time_to_response = closed_at.unwrap() - created_at;
-                    match time_to_response.to_std() {
-                        Ok(duration) => {
-                            total_time_to_response += duration.as_secs_f64();
-                            total_issues += 1;
-                        },
-                        Err(out_of_range_error) => continue,
-                    }
-                }
-                }
-            }
-
-
-    let average_time_to_response = total_time_to_response / total_issues as f64;
-    println!("average_time_to_response {}", average_time_to_response);
-    // println!("average_time_to_response {}", average_time_to_response);
-    let max_time_to_response = 30 * 24 * 60 * 60;  // 30 days in seconds
-    println!("max_time_to_response {}", max_time_to_response);
-    // println!("max_time_to_response {}", max_time_to_response);
-
-    //let responsive_maintainer_ness = (1.0 - (average_time_to_response / max_time_to_response as f64).abs()).abs();
-    // println!("responsive_maintainerness {}", responsive_maintainer_ness);
-
-    let responsive_maintainer_ness = ((average_time_to_response / max_time_to_response as f64).abs()).abs();
-
-    println!("average_time_to_response / max_time_to_response {}", average_time_to_response / max_time_to_response as f64);
-    println!("responsive_maintainer_ness {}", responsive_maintainer_ness);
-    // println!("average_time_to_response / max_time_to_response {}", average_time_to_response / max_time_to_response as f64);
-    // println!("responsive_maintainer_ness {}", responsive_maintainer_ness);
-
-
-    //Ok(responsive_maintainer_ness.max(0.0).min(1.0))
-    let mut response_vec = Vec::new();
-    response_vec.push(average_time_to_response);
-    response_vec.push(max_time_to_response as f64);
-
-    //Ok(responsive_maintainer_ness.max(0.0).min(1.0))
-    Ok(response_vec)
 }
 
 // This function returns a vector of tuples. Each tuple contains a contrubutor, the number of
 // contributions they made, and the percentage of total contributions that they made. This
 // vector saved as 'contributors' which is a vector of tuples. It is saved as the result.
-pub async fn get_contributors_with_percentages(token: String, owner: String, repo: String) -> Result<Vec<(octocrab::models::repos::Contributor, i32, f32)>, octocrab::Error> {
-    let octo = Octocrab::builder().personal_token(token).build().unwrap();
-    let contributors = octo.repos(owner, repo).list_contributors().send().await?;
-    let mut contributor_list = vec![];
+// pub async fn get_contributors_with_percentages(token: String, owner: String, repo: String) -> Result<Vec<(octocrab::models::repos::Contributor, i32, f32)>, octocrab::Error> {
+//     let octo = Octocrab::builder().personal_token(token).build().unwrap();
+//     let contributors = octo.repos(owner, repo).list_contributors().send().await?;
+//     let mut contributor_list = vec![];
 
-    for contributor in contributors.items {
-        contributor_list.push((contributor.clone(), contributor.contributions));
-    }
+//     for contributor in contributors.items {
+//         contributor_list.push((contributor.clone(), contributor.contributions));
+//     }
 
-    let total_contributions: i32 = contributor_list.iter().map(|(_, contributions)| *contributions).sum();
-    let mut result = vec![];
+//     let total_contributions: i32 = contributor_list.iter().map(|(_, contributions)| *contributions).sum();
+//     let mut result = vec![];
 
-    for (contributor, contributions) in contributor_list {
-        let percentage = (contributions as f32 / total_contributions as f32) * 100.0;
-        result.push((contributor.clone(), contributions, percentage));
-    }
+//     for (contributor, contributions) in contributor_list {
+//         let percentage = (contributions as f32 / total_contributions as f32) * 100.0;
+//         result.push((contributor.clone(), contributions, percentage));
+//     }
 
-    Ok(result)
-}
+//     Ok(result)
+// }
 
 // Our group determined that the presense of a README was the most important part of
 // the ramp up score. A README allows others to get versed in a project and learn what

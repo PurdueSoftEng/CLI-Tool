@@ -5,19 +5,20 @@ use serde_json;
 use octocrab::{Octocrab, Page, Result, models::{self, repos::RepoCommit}, params};
 use tokio::net::windows::named_pipe::PipeEnd::Client;
 use std::error::Error;
-use chrono::{Duration, Utc, NaiveDate};
+use chrono::{Duration, Utc, NaiveDate, DateTime};
 
 pub fn init_octo(token: String) -> Result<Octocrab, octocrab::Error>
 {
     (Octocrab::builder().personal_token(token).build())
 }
 
-pub async fn get_repo(octo: Octocrab, owner: String, repo: String) -> Result<octocrab::models::Repository, ()> {
-    let repo = match octo.repos(owner, repo).get().await {
+pub async fn get_repo(token: String, owner: String, repo_name: String) -> octocrab::models::Repository {
+    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+    match octo.repos(owner, repo_name.clone()).get().await 
+    {
         Ok(repo) => repo,
-        Err(_) => return Err(()),
-    };
-    Ok(repo)
+        Err(_) => panic!("Could not retrieve {}", repo_name.as_str()),
+    }
 }
 
 pub async fn get_issue(token: String, owner: String, repo: String) -> Result<Page<octocrab::models::issues::Issue>, octocrab::Error> {
@@ -231,6 +232,148 @@ pub async fn get_num_commits(token: String, owner: &str, repo: &str) -> serde_js
         Ok(json) => json,
         Err(_) => panic!("Error with query"),
     }
+}
+
+pub async fn get_license(token: String, owner: &str, repo: &str) -> serde_json::Value
+{
+    let v = vec!["query {repository(owner: \"", owner, "\", name: \"", repo, "\") { licenseInfo {key name spdxId url}}}"];
+
+    let str: String = v.concat();
+
+    println!("{}", str);
+
+    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+
+    match octo.graphql(&str).await
+    {
+        Ok(json) => json,
+        Err(_) => panic!("Error with query"),
+    }
+}
+
+pub async fn get_issue_response_times(token: String, owner: String, repo: String) -> Result<Vec<f64>, octocrab::Error> {
+    let octo = Octocrab::builder().personal_token(token.clone()).build().unwrap();
+    let mut page= octo.repos(owner.clone(), repo.clone()).list_commits().send().await?;
+
+    let mut all_issues = get_issues(token.clone(), owner, repo, 100).await.unwrap();
+
+    let mut total_time_to_response: f64 = 0.0;
+    let mut total_issues: i32 = 0;
+
+    for bin in all_issues {
+        for issue in bin{
+            let created_at = issue.created_at;
+            let closed_at = issue.closed_at;
+            if closed_at.is_some(){
+                let time_to_response = closed_at.unwrap() - created_at;
+                    match time_to_response.to_std() {
+                        Ok(duration) => {
+                            total_time_to_response += duration.as_secs_f64();
+                            total_issues += 1;
+                        },
+                        Err(out_of_range_error) => continue,
+                    }
+                }
+                }
+            }
+
+
+    let average_time_to_response = total_time_to_response / total_issues as f64;
+    println!("average_time_to_response {}", average_time_to_response);
+    // println!("average_time_to_response {}", average_time_to_response);
+    let max_time_to_response = 30 * 24 * 60 * 60;  // 30 days in seconds
+    println!("max_time_to_response {}", max_time_to_response);
+    // println!("max_time_to_response {}", max_time_to_response);
+
+    //let responsive_maintainer_ness = (1.0 - (average_time_to_response / max_time_to_response as f64).abs()).abs();
+    // println!("responsive_maintainerness {}", responsive_maintainer_ness);
+
+    let responsive_maintainer_ness = ((average_time_to_response / max_time_to_response as f64).abs()).abs();
+
+    println!("average_time_to_response / max_time_to_response {}", average_time_to_response / max_time_to_response as f64);
+    println!("responsive_maintainer_ness {}", responsive_maintainer_ness);
+    // println!("average_time_to_response / max_time_to_response {}", average_time_to_response / max_time_to_response as f64);
+    // println!("responsive_maintainer_ness {}", responsive_maintainer_ness);
+
+
+    //Ok(responsive_maintainer_ness.max(0.0).min(1.0))
+    let mut response_vec = Vec::new();
+    response_vec.push(average_time_to_response);
+    response_vec.push(max_time_to_response as f64);
+
+    //Ok(responsive_maintainer_ness.max(0.0).min(1.0))
+    Ok(response_vec)
+}
+
+pub async fn get_license(token: String, owner: &str, repo: &str) -> serde_json::Value
+{
+    let v = vec!["query {repository(owner: \"", owner, "\", name: \"", repo, "\") { licenseInfo {key name spdxId url}}}"];
+
+    let str: String = v.concat();
+
+    println!("{}", str);
+
+    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+
+    match octo.graphql(&str).await
+    {
+        Ok(json) => json,
+        Err(_) => panic!("Error with query"),
+    }
+}
+
+pub async fn get_issue_response_times(token: String, owner: String, repo: String) -> Result<Vec<f64>, octocrab::Error> {
+    let octo = Octocrab::builder().personal_token(token.clone()).build().unwrap();
+    let mut page= octo.repos(owner.clone(), repo.clone()).list_commits().send().await?;
+
+    let mut all_issues = get_issues(token.clone(), owner, repo, 100).await.unwrap();
+
+    let mut total_time_to_response: f64 = 0.0;
+    let mut total_issues: i32 = 0;
+
+    for bin in all_issues {
+        for issue in bin{
+            let created_at = issue.created_at;
+            let closed_at = issue.closed_at;
+            if closed_at.is_some(){
+                let time_to_response = closed_at.unwrap() - created_at;
+                    match time_to_response.to_std() {
+                        Ok(duration) => {
+                            total_time_to_response += duration.as_secs_f64();
+                            total_issues += 1;
+                        },
+                        Err(out_of_range_error) => continue,
+                    }
+                }
+                }
+            }
+
+
+    let average_time_to_response = total_time_to_response / total_issues as f64;
+    println!("average_time_to_response {}", average_time_to_response);
+    // println!("average_time_to_response {}", average_time_to_response);
+    let max_time_to_response = 30 * 24 * 60 * 60;  // 30 days in seconds
+    println!("max_time_to_response {}", max_time_to_response);
+    // println!("max_time_to_response {}", max_time_to_response);
+
+    //let responsive_maintainer_ness = (1.0 - (average_time_to_response / max_time_to_response as f64).abs()).abs();
+    // println!("responsive_maintainerness {}", responsive_maintainer_ness);
+
+    let responsive_maintainer_ness = ((average_time_to_response / max_time_to_response as f64).abs()).abs();
+
+    println!("average_time_to_response / max_time_to_response {}", average_time_to_response / max_time_to_response as f64);
+    println!("responsive_maintainer_ness {}", responsive_maintainer_ness);
+    // println!("average_time_to_response / max_time_to_response {}", average_time_to_response / max_time_to_response as f64);
+    // println!("responsive_maintainer_ness {}", responsive_maintainer_ness);
+
+
+    //Ok(responsive_maintainer_ness.max(0.0).min(1.0))
+    let mut response_vec = Vec::new();
+    response_vec.push(average_time_to_response);
+    response_vec.push(max_time_to_response as f64);
+
+    //Ok(responsive_maintainer_ness.max(0.0).min(1.0))
+    Ok(response_vec)
 }
 
 // This function returns a vector of tuples. Each tuple contains a contrubutor, the number of

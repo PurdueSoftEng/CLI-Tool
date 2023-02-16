@@ -278,8 +278,6 @@ pub async fn get_license(token: String, owner: &str, repo: &str) -> serde_json::
 
     let str: String = v.concat();
 
-    println!("{}", str);
-
     let octo = Octocrab::builder().personal_token(token).build().unwrap();
 
     match octo.graphql(&str).await

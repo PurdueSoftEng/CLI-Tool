@@ -146,13 +146,11 @@ async fn main() -> Result<()> {
     let repo_info = extract_owner_and_repo(repos_list.first().unwrap().url.as_str());
     let owner = repo_info.clone().unwrap().0;
     let repo_name = repo_info.clone().unwrap().1;
-    println!("temp");
 
     let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await;
 
     for mut repository in repos_list{
         let scores_list = calc_metrics(token.clone(), owner.clone(), repo_name.clone()).await;
-
         for score in scores_list{
             repository.responsive_set(score);
             repository.license_set(score);
@@ -176,16 +174,12 @@ async fn calc_metrics(token: String, owner: String, repo: String) -> Vec<f32> {
     let repository_layer = data_layer.get_mut("repository").expect("Repository key not found");
     let license_layer = repository_layer.get_mut("licenseInfo").expect("License key not found");
     let mut license_score = 0;
-
     if license_layer.get("key").is_some()
     {
         license_score = calc_license::calc_licenses(license_layer.get("key").unwrap().to_string()).await;
     }
 
     scores_vec.push(license_score as f32);
-
-
-
     scores_vec    
 }
 
@@ -206,36 +200,6 @@ mod tests {
         assert_eq!(result, expected_output);
     }
 }
-
-// fn create_ndjson(url: &str, net_score: f32, ramp_up_score: f32, correctness_score: f32, bus_factor_score: f32, responsive_maintainer_score: f32, license_score: f32) {
-//     let json = json!({
-//         "URL": url,
-//         "NET_SCORE": net_score,
-//         "RAMP_UP_SCORE": ramp_up_score,
-//         "CORRECTNESS_SCORE": correctness_score,
-//         "BUS_FACTOR_SCORE": bus_factor_score,
-//         "RESPONSIVE_MAINTAINER_SCORE": responsive_maintainer_score,
-//         "LICENSE_SCORE": license_score
-//     });
-
-//     let ndjson = json.to_string();
-//     println!("{}", ndjson);
-// }
-
-// fn create_ndjson(url: &str, net_score: f32, ramp_up_score: f32, correctness_score: f32, bus_factor_score: f32, responsive_maintainer_score: f32, license_score: f32) {
-//     let mut map = Map::new();
-//     map.insert("URL".to_string(), Value::String(url.to_string()));
-//     map.insert("NET_SCORE".to_string(), Value::Number(serde_json::Number::from(net_score)));
-//     map.insert("RAMP_UP_SCORE".to_string(), Value::Number(serde_json::Number::from(ramp_up_score)));
-//     map.insert("CORRECTNESS_SCORE".to_string(), Value::Number(serde_json::Number::from(correctness_score)));
-//     map.insert("BUS_FACTOR_SCORE".to_string(), Value::Number(serde_json::Number::from(bus_factor_score)));
-//     map.insert("RESPONSIVE_MAINTAINER_SCORE".to_string(), Value::Number(serde_json::Number::from(responsive_maintainer_score)));
-//     map.insert("LICENSE_SCORE".to_string(), Value::Number(serde_json::Number::from(license_score)));
-
-//     let json = Value::Object(map);
-//     let ndjson = serde_json::to_string(&json).unwrap();
-//     println!("{}", ndjson);
-// }
 
 use serde::ser::{Serialize, SerializeMap, Serializer};
 

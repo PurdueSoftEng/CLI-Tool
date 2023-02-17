@@ -6,7 +6,7 @@ use std::io::{self, Write};
 use anyhow::{Context, Result};
 extern crate octocrab;
 
-use octocrab::{Octocrab, Page, models::{self, repos::RepoCommit}, params};
+use octocrab::{Octocrab, Page, models::{self, repos::{RepoCommit, self}}, params};
 
 use serde_json::{json, Value, Map};
 
@@ -158,6 +158,9 @@ async fn main() -> Result<()> {
             repository.responsive_set(score);
             repository.license_set(score);
             repository.rampup_set(score);
+            repository.correct_set(score);
+            repository.bus_set(score);
+            repository.overall_set(score);
         }
         
         create_ndjson(repository.url.as_str(), repository.overall(), repository.rampup(), repository.correct(), repository.bus(), repository.responsive(), repository.license());
@@ -184,10 +187,20 @@ async fn calc_metrics(token: String, owner: String, repo: String) -> Vec<f32> {
     }
     scores_vec.push(license_score as f32);
 
-    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+    let mut octo = Octocrab::builder().personal_token(token.clone()).build().unwrap();
 
-    let ramp_up_score = ramp_up::get_weighted_score(octo, owner.clone(), repo.clone()).await.unwrap();
+    let ramp_up_score = ramp_up::get_weighted_score(octo.clone(), owner.clone(), repo.clone()).await.unwrap();
     scores_vec.push(ramp_up_score as f32);
+
+    let correctness_score = correctness::get_weighted_score(octo.clone(), owner.clone(), repo.clone()).await.unwrap();
+    scores_vec.push(correctness_score as f32);
+
+    let bus_factor_score = calc_bus_factor::calculate_bus_factor(token.clone(), owner.clone(), repo.clone()).await;
+    scores_vec.push(bus_factor_score as f32);
+
+    let net_score_score = 0.0;
+    scores_vec.push(net_score_score as f32);
+
     scores_vec    
 }
 

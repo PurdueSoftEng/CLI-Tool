@@ -290,25 +290,25 @@ pub async fn get_license(token: String, owner: &str, repo: &str) -> serde_json::
 // This function returns a vector of tuples. Each tuple contains a contrubutor, the number of
 // contributions they made, and the percentage of total contributions that they made. This
 // vector saved as 'contributors' which is a vector of tuples. It is saved as the result.
-// pub async fn get_contributors_with_percentages(token: String, owner: String, repo: String) -> Result<Vec<(octocrab::models::repos::Contributor, i32, f32)>, octocrab::Error> {
-//     let octo = Octocrab::builder().personal_token(token).build().unwrap();
-//     let contributors = octo.repos(owner, repo).list_contributors().send().await?;
-//     let mut contributor_list = vec![];
+pub async fn get_contributors_with_percentages(token: String, owner: String, repo: String) -> Result<Vec<(octocrab::models::repos::Contributor, i32, f32)>, octocrab::Error> {
+    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+    let contributors = octo.repos(owner, repo).list_contributors().send().await?;
+    let mut contributor_list = vec![];
 
-//     for contributor in contributors.items {
-//         contributor_list.push((contributor.clone(), contributor.contributions));
-//     }
+    for contributor in contributors.items {
+        contributor_list.push((contributor.clone(), contributor.contributions));
+    }
 
-//     let total_contributions: i32 = contributor_list.iter().map(|(_, contributions)| *contributions).sum();
-//     let mut result = vec![];
+    let total_contributions: i32 = contributor_list.iter().map(|(_, contributions)| *contributions).sum();
+    let mut result = vec![];
 
-//     for (contributor, contributions) in contributor_list {
-//         let percentage = (contributions as f32 / total_contributions as f32) * 100.0;
-//         result.push((contributor.clone(), contributions, percentage));
-//     }
+    for (contributor, contributions) in contributor_list {
+        let percentage = (contributions as f32 / total_contributions as f32) * 100.0;
+        result.push((contributor.clone(), contributions, percentage));
+    }
 
-//     Ok(result)
-// }
+    Ok(result)
+}
 
 // Our group determined that the presense of a README was the most important part of
 // the ramp up score. A README allows others to get versed in a project and learn what

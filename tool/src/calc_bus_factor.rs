@@ -1,3 +1,5 @@
+use crate::octo;
+
 // This is a helper function that sorts our contributors vector so that the contributors with the
 // highest percentage of contributions come first. This essentially ranks the percentages from 
 // highest to lowest.
@@ -33,7 +35,18 @@ pub fn get_factor_ratio(contributors: &[(octocrab::models::repos::Contributor, u
 // example if we had a repository with 10 contributors but only 1 person did 80% of the work this
 // is better than 5 people doing 80% of the work. To better score our metric we do 1 - the factior
 // ratio to get a decimal to score it.
-fn calculate_bus_factor(factor_ratio: f64) -> f64 {
+pub async fn calculate_bus_factor(token: String, owner: String, repo: String) -> f32 {
+
+    let mut contributors = octo::get_contributors_with_percentages(token, owner, repo).await.unwrap();
+    
+    let mut converted_contributors: Vec<(octocrab::models::repos::Contributor, u32, f32)> = contributors
+    .into_iter()
+    .map(|(contributor, commits, percent)| (contributor, commits as u32, percent))
+    .collect();
+    
+    sort_by_percentage(&mut converted_contributors);
+    let core_contributors = find_core_contributors(&converted_contributors);
+    let factor_ratio = get_factor_ratio(&converted_contributors, core_contributors);
     1.0 - factor_ratio
 }
 

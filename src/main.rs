@@ -187,7 +187,7 @@ async fn calc_metrics(token: String, owner: String, repo: String) -> Vec<f32> {
     }
     scores_vec.push(license_score as f32);
 
-    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+    let octo = Octocrab::builder().personal_token(token.clone()).build().unwrap();
 
     let ramp_up_score = ramp_up::get_weighted_score(octo.clone(), owner.clone(), repo.clone()).await.unwrap();
     scores_vec.push(ramp_up_score as f32);

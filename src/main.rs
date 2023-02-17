@@ -4,8 +4,11 @@ use clap::Parser;
 use log::{info, warn, debug, LevelFilter};
 use std::io::{self, Write};
 use anyhow::{Context, Result};
+extern crate octocrab;
 
-use serde_json::json;
+use octocrab::{Octocrab, Page, models::{self, repos::RepoCommit}, params};
+
+use serde_json::{json, Value, Map};
 
 use dotenv::dotenv;
 use std::env;
@@ -19,6 +22,14 @@ use std::cmp::Ordering;
 
 mod octo;
 mod calc_responsive_maintainer;
+mod correctness;
+mod calc_bus_factor;
+mod ramp_up;
+
+extern crate serde;
+extern crate serde_json;
+
+use std::io::prelude::*;
 mod calc_license;
 
 #[derive(Parser)]
@@ -28,6 +39,11 @@ struct Cli {
 
 #[derive(Debug)]
 struct CustomError(String);
+
+/*#[derive(Serialize, Deserialize, Debug)]
+struct Output {
+
+}*/
 
 #[derive(Debug)]
 struct GithubRepo {
@@ -129,34 +145,31 @@ async fn main() -> Result<()> {
     let stdout = io::stdout();
     let mut handle_lock = stdout.lock();
     let token: String = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
-
-    // let owner = "MinecraftForge";
-    // let repo_name = "ForgeGradle";
     let mut repos_list = read_github_repos_from_file(&args.path);
     let repo_info = extract_owner_and_repo(repos_list.first().unwrap().url.as_str());
     let owner = repo_info.clone().unwrap().0;
     let repo_name = repo_info.clone().unwrap().1;
-    //println!("repo_info: {:#?}", repo_info);
-    let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await;
-    //info!("Retrieved {}", repo.name);
 
-    //let temp = octo::get_issue_response_times(token, owner, repo_name);
+    let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await;
 
     for mut repository in repos_list{
         let scores_list = calc_metrics(token.clone(), owner.clone(), repo_name.clone()).await;
-
         for score in scores_list{
             repository.responsive_set(score);
             repository.license_set(score);
+            repository.rampup_set(score);
+            repository.correct_set(score);
+            repository.bus_set(score);
+            repository.overall_set(score);
         }
         
-        create_ndjson("temp", repository.overall(), repository.rampup(), repository.correct(), repository.bus(), repository.responsive(), repository.license());
+        //create_ndjson(repository.url.as_str(), repository.overall(), repository.rampup(), repository.correct(), repository.bus(), repository.responsive(), repository.license());
+        create_ndjson(repository.url.as_str(), repository.overall(), repository.rampup(), repository.correct(), repository.bus(), repository.responsive(), repository.license());
+
     }
 
-
-
-
     Ok(())
+    
 }
 
 async fn calc_metrics(token: String, owner: String, repo: String) -> Vec<f32> {
@@ -170,17 +183,30 @@ async fn calc_metrics(token: String, owner: String, repo: String) -> Vec<f32> {
     let repository_layer = data_layer.get_mut("repository").expect("Repository key not found");
     let license_layer = repository_layer.get_mut("licenseInfo").expect("License key not found");
     let mut license_score = 0;
-
     if license_layer.get("key").is_some()
     {
         license_score = calc_license::calc_licenses(license_layer.get("key").unwrap().to_string()).await;
     }
-
     scores_vec.push(license_score as f32);
 
+    let octo = Octocrab::builder().personal_token(token.clone()).build().unwrap();
 
+    let ramp_up_score = ramp_up::get_weighted_score(octo.clone(), owner.clone(), repo.clone()).await.unwrap();
+    //let ramp_up_score = 0;
+    scores_vec.push(ramp_up_score as f32);
 
-    scores_vec    
+    //let correctness_score = correctness::get_weighted_score(token.clone(), owner.clone(), repo.clone()).await.unwrap();
+    let correctness_score = 0;
+    scores_vec.push(correctness_score as f32);
+
+    let bus_factor_score = 0;
+    //let bus_factor_score = calc_bus_factor::calculate_bus_factor(token.clone(), owner.clone(), repo.clone()).await;
+    scores_vec.push(bus_factor_score as f32);
+
+    let net_score_score = 0.0;
+    scores_vec.push(net_score_score as f32);
+
+    scores_vec   
 }
 
 #[cfg(test)]
@@ -211,7 +237,6 @@ fn create_ndjson(url: &str, net_score: f32, ramp_up_score: f32, correctness_scor
         "RESPONSIVE_MAINTAINER_SCORE": responsive_maintainer_score,
         "LICENSE_SCORE": license_score
     });
-
     let ndjson = json.to_string();
     println!("{}", ndjson);
 }

@@ -45,7 +45,12 @@ struct Output {
 
 }*/
 
-#[derive(Debug)]
+// #[derive(Debug)]
+// struct GithubRepo {
+//     url: String,
+//     scores: Vec<f32>,
+// }
+#[derive(Debug, Clone)]
 struct GithubRepo {
     url: String,
     scores: Vec<f32>,
@@ -152,31 +157,19 @@ async fn main() -> Result<()> {
 
     let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await;
 
-    for mut repository in repos_list{
-        let scores_list = calc_metrics(token.clone(), owner.clone(), repo_name.clone()).await;
-        for score in scores_list{
-            repository.responsive_set(score);
-            repository.license_set(score);
-            repository.rampup_set(score);
-            repository.correct_set(score);
-            repository.bus_set(score);
-            repository.overall_set(score);
-        }
-        
-        //create_ndjson(repository.url.as_str(), repository.overall(), repository.rampup(), repository.correct(), repository.bus(), repository.responsive(), repository.license());
+    for repository in &mut repos_list{
+        calc_metrics(repository, token.clone(), owner.clone(), repo_name.clone()).await;
         create_ndjson(repository.url.as_str(), repository.overall(), repository.rampup(), repository.correct(), repository.bus(), repository.responsive(), repository.license());
-
     }
 
     Ok(())
     
 }
 
-async fn calc_metrics(token: String, owner: String, repo: String) -> Vec<f32> {
-    let mut scores_vec = Vec::new();
+async fn calc_metrics(repository: &mut GithubRepo, token: String, owner: String, repo: String) {
     let mut issue_response_times = octo::get_issue_response_times(token.clone(), owner.clone(), repo.clone()).await.unwrap();
     let mut responsive_score = calc_responsive_maintainer::calc_responsive_maintainer(issue_response_times[0], issue_response_times[1]) as f32;
-    scores_vec.push(responsive_score);
+    repository.responsive_set(responsive_score);
 
     let mut resp = octo::get_license(token.clone(), owner.clone().as_str(), repo.clone().as_str()).await;
     let data_layer = resp.get_mut("data").expect("Data key not found");
@@ -186,27 +179,27 @@ async fn calc_metrics(token: String, owner: String, repo: String) -> Vec<f32> {
     if license_layer.get("key").is_some()
     {
         license_score = calc_license::calc_licenses(license_layer.get("key").unwrap().to_string()).await;
+        println!("license score: {}", license_score);
     }
-    scores_vec.push(license_score as f32);
+    repository.license_set(license_score.into());
 
     let octo = Octocrab::builder().personal_token(token.clone()).build().unwrap();
 
-    let ramp_up_score = ramp_up::get_weighted_score(octo.clone(), owner.clone(), repo.clone()).await.unwrap();
-    //let ramp_up_score = 0;
-    scores_vec.push(ramp_up_score as f32);
+    let mut ramp_up_score = ramp_up::get_weighted_score(octo.clone(), owner.clone(), repo.clone()).await.unwrap();
+    println!("ramp up score: {}", ramp_up_score);
+    repository.rampup_set(ramp_up_score as f32);
 
-    //let correctness_score = correctness::get_weighted_score(token.clone(), owner.clone(), repo.clone()).await.unwrap();
-    let correctness_score = 0;
-    scores_vec.push(correctness_score as f32);
+    let mut correctness_score = correctness::get_weighted_score(token.clone(), owner.clone(), repo.clone()).await.unwrap();
+    println!("correctness: {}", correctness_score);
+    //let correctness_score = 0;
+    repository.correct_set(correctness_score as f32);
 
-    let bus_factor_score = 0;
+    let mut bus_factor_score = 0;
     //let bus_factor_score = calc_bus_factor::calculate_bus_factor(token.clone(), owner.clone(), repo.clone()).await;
-    scores_vec.push(bus_factor_score as f32);
+    repository.bus_set(bus_factor_score as f32);
 
-    let net_score_score = 0.0;
-    scores_vec.push(net_score_score as f32);
-
-    scores_vec   
+    let mut net_score_score = 0.0;
+    repository.overall_set(net_score_score);
 }
 
 #[cfg(test)]

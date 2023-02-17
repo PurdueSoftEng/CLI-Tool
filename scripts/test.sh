@@ -1,17 +1,15 @@
 #!/bin/sh
 
-cd tool
-cd tool
 if [ -e "log/test.log" ]; then
     rm log/test.log
 fi
-cargo test > log/test.log 2>&1
+cargo test --tests --bin tool > log/test.log 2>&1
 
 
 if [ $? -eq 0 ]; then
-  failed=$(grep -o "FAILED" log/test.log | wc -l)
-  passed=$(grep -o "PASSED" log/test.log | wc -l)
-  total=$failed + $passed
+  passed=$(cat log/test.log | grep -o "ok. [0-9]* passed;" | sed 's/ok. \([0-9]*\) passed;/\1/')
+  failed=$(cat log/test.log | grep -o "[0-9]* failed;" | sed 's/\([0-9]*\) failed;/\1/')
+  total=$(cat log/test.log | grep -o "running [0-9]* tests" | sed 's/running \([0-9]*\) tests/\1/')
   echo "Total Tests: $total"
   echo "Passed Tests: $passed"
   echo "Coverage Test Percentage: unknown"

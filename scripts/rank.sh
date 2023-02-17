@@ -1,6 +1,5 @@
 #!/bin/bash
 
-cd tool
 echo "$GITHUB_TOKEN"
 if [ -e "log/run.log" ]; then
     rm log/run.log

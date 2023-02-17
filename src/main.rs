@@ -183,23 +183,6 @@ async fn calc_metrics(token: String, owner: String, repo: String) -> Vec<f32> {
     scores_vec    
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::calc_responsive_maintainer::calc_responsive_maintainer;
-
-    use super::*;
-
-    #[test]
-    fn test_calc_responsive_maintainer() {
-        let owner = "cloudinary";
-        let repo_name = "cloudinary_npm";
-        let expected_output = 0.0;
-        let token: String = std::env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
-
-        let result = calc_responsive_maintainer::calc_responsive_maintainer(0.0, 0.0);
-        assert_eq!(result, expected_output);
-    }
-}
 
 fn create_ndjson(url: &str, net_score: f32, ramp_up_score: f32, correctness_score: f32, bus_factor_score: f32, responsive_maintainer_score: f32, license_score: f32) {
     let json = json!({
@@ -214,4 +197,38 @@ fn create_ndjson(url: &str, net_score: f32, ramp_up_score: f32, correctness_scor
 
     let ndjson = json.to_string();
     println!("{}", ndjson);
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::calc_responsive_maintainer::calc_responsive_maintainer;
+    use std::fs::File;
+    use std::io::prelude::*;
+    use tempfile::tempdir;
+    use super::*;
+
+    #[test]
+    fn test_calc_responsive_maintainer() {
+        let owner = "cloudinary";
+        let repo_name = "cloudinary_npm";
+        let expected_output = 0.0;
+        let token: String = std::env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
+
+        let result = calc_responsive_maintainer::calc_responsive_maintainer(0.0, 0.0);
+        assert_eq!(result, expected_output);
+    }
+
+    #[test]
+    fn test_read_github_repos_from_file() {
+        let temp_dir = tempdir().unwrap();
+        let test_file_path = temp_dir.path().join("test_file.txt");
+        let mut file = File::create(&test_file_path).unwrap();
+        file.write_all(b"https://github.com/lodash/lodash\nhttps://github.com/nullivex/nodist\nhttps://www.npmjs.com/package/browserify").unwrap();
+
+        let repos = read_github_repos_from_file(test_file_path.to_str().unwrap());
+        assert_eq!(repos.len(), 3);
+        assert_eq!(repos.get(0).unwrap().url, String::from("https://github.com/lodash/lodash"));
+        assert_eq!(repos.get(1).unwrap().url, String::from("https://github.com/nullivex/nodist"));
+        assert_eq!(repos.get(2).unwrap().url, String::from("https://www.npmjs.com/package/browserify"));
+    }
 }

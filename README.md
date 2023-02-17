@@ -10,4 +10,3 @@ Colleen Granelli
 Isaac Hagedorn
 
 Emma Misenheimer
-

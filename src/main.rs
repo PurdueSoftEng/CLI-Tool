@@ -186,11 +186,11 @@ async fn calc_metrics(repository: &mut GithubRepo, token: String, owner: String,
     let octo = Octocrab::builder().personal_token(token.clone()).build().unwrap();
 
     let mut ramp_up_score = ramp_up::get_weighted_score(octo.clone(), owner.clone(), repo.clone()).await.unwrap();
-    println!("ramp up score: {}", ramp_up_score);
+    //println!("ramp up score: {}", ramp_up_score);
     repository.rampup_set(ramp_up_score as f32);
 
     let mut correctness_score = correctness::get_weighted_score(token.clone(), owner.clone(), repo.clone()).await.unwrap();
-    println!("correctness: {}", correctness_score);
+    //println!("correctness: {}", correctness_score);
     //let correctness_score = 0;
     repository.correct_set(correctness_score as f32);
 

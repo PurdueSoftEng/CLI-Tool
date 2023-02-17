@@ -251,18 +251,18 @@ mod tests {
     }
 }
 
-fn sort_repositories(repositories: &mut Vec<GithubRepo>) {
-    repositories.sort_by(|a, b| {
-        let overall_cmp = b.overall().cmp(&a.overall());
-        if overall_cmp == Ordering::Equal {
-            let bus_cmp = b.bus().cmp(&a.bus());
-            if bus_cmp == Ordering::Equal {
-                a.license().cmp(&b.license())
-            } else {
-                bus_cmp
-            }
-        } else {
-            overall_cmp
-        }
-    });
-}
+// fn sort_repositories(repositories: &mut Vec<GithubRepo>) {
+//     repositories.sort_by(|a, b| {
+//         let overall_cmp = b.overall().cmp(&a.overall());
+//         if overall_cmp == Ordering::Equal {
+//             let bus_cmp = b.bus().cmp(&a.bus());
+//             if bus_cmp == Ordering::Equal {
+//                 a.license().cmp(&b.license())
+//             } else {
+//                 bus_cmp
+//             }
+//         } else {
+//             overall_cmp
+//         }
+//     });
+// }

@@ -233,23 +233,6 @@ pub async fn get_num_commits(token: String, owner: &str, repo: &str) -> serde_js
     }
 }
 
-pub async fn get_license(token: String, owner: &str, repo: &str) -> serde_json::Value
-{
-    let v = vec!["query {repository(owner: \"", owner, "\", name: \"", repo, "\") { licenseInfo {key name spdxId url}}}"];
-
-    let str: String = v.concat();
-
-    println!("{}", str);
-
-    let octo = Octocrab::builder().personal_token(token).build().unwrap();
-
-    match octo.graphql(&str).await
-    {
-        Ok(json) => json,
-        Err(_) => panic!("Error with query"),
-    }
-}
-
 pub async fn get_issue_response_times(token: String, owner: String, repo: String) -> Result<Vec<f64>, octocrab::Error> {
     let octo = Octocrab::builder().personal_token(token.clone()).build().unwrap();
     let mut page= octo.repos(owner.clone(), repo.clone()).list_commits().send().await?;
@@ -278,28 +261,157 @@ pub async fn get_issue_response_times(token: String, owner: String, repo: String
 
 
     let average_time_to_response = total_time_to_response / total_issues as f64;
-    println!("average_time_to_response {}", average_time_to_response);
-    // println!("average_time_to_response {}", average_time_to_response);
     let max_time_to_response = 30 * 24 * 60 * 60;  // 30 days in seconds
-    println!("max_time_to_response {}", max_time_to_response);
-    // println!("max_time_to_response {}", max_time_to_response);
-
-    //let responsive_maintainer_ness = (1.0 - (average_time_to_response / max_time_to_response as f64).abs()).abs();
-    // println!("responsive_maintainerness {}", responsive_maintainer_ness);
-
     let responsive_maintainer_ness = ((average_time_to_response / max_time_to_response as f64).abs()).abs();
 
-    println!("average_time_to_response / max_time_to_response {}", average_time_to_response / max_time_to_response as f64);
-    println!("responsive_maintainer_ness {}", responsive_maintainer_ness);
-    // println!("average_time_to_response / max_time_to_response {}", average_time_to_response / max_time_to_response as f64);
-    // println!("responsive_maintainer_ness {}", responsive_maintainer_ness);
-
-
-    //Ok(responsive_maintainer_ness.max(0.0).min(1.0))
     let mut response_vec = Vec::new();
     response_vec.push(average_time_to_response);
     response_vec.push(max_time_to_response as f64);
 
-    //Ok(responsive_maintainer_ness.max(0.0).min(1.0))
     Ok(response_vec)
+}
+
+pub async fn get_license(token: String, owner: &str, repo: &str) -> serde_json::Value
+{
+    let v = vec!["query {repository(owner: \"", owner, "\", name: \"", repo, "\") { licenseInfo {key name spdxId url}}}"];
+
+    let str: String = v.concat();
+
+    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+
+    match octo.graphql(&str).await
+    {
+        Ok(json) => json,
+        Err(_) => panic!("Error with query"),
+    }
+}
+
+// This function returns a vector of tuples. Each tuple contains a contrubutor, the number of
+// contributions they made, and the percentage of total contributions that they made. This
+// vector saved as 'contributors' which is a vector of tuples. It is saved as the result.
+pub async fn get_contributors_with_percentages(token: String, owner: String, repo: String) -> Result<Vec<(octocrab::models::repos::Contributor, i32, f32)>, octocrab::Error> {
+    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+    let contributors = octo.repos(owner, repo).list_contributors().send().await?;
+    let mut contributor_list = vec![];
+
+    for contributor in contributors.items {
+        contributor_list.push((contributor.clone(), contributor.contributions));
+    }
+
+    let total_contributions: i32 = contributor_list.iter().map(|(_, contributions)| *contributions).sum();
+    let mut result = vec![];
+
+    for (contributor, contributions) in contributor_list {
+        let percentage = (contributions as f32 / total_contributions as f32) * 100.0;
+        result.push((contributor.clone(), contributions, percentage));
+    }
+
+    Ok(result)
+}
+
+// Our group determined that the presense of a README was the most important part of
+// the ramp up score. A README allows others to get versed in a project and learn what
+// its about. If there is a README the repository will recieve a score of 1. If not
+// it will get a score of 0.
+pub async fn has_readme(octo: Octocrab, owner: String, repo: String) -> Result<i32, octocrab::Error> {
+    let mut contents = octo.repos(owner, repo).get_content().send().await.unwrap();
+
+    let mut readme_count = 0;
+
+    for content in contents.take_items() {
+        let name = content.name.as_str();
+        if name.to_lowercase().starts_with("readme") {
+            readme_count += 1;
+        }
+    }
+
+    if readme_count > 1 {
+        Ok(1)
+    } else {
+        Ok(0)
+    }
+}
+
+pub async fn check_multiple_readmes(octo: Octocrab, owner: String, repo: String) -> Result<i32, octocrab::Error> {
+    /*let contents_url = format!("/repos/{}/{}/contents/", owner, repo);
+    let contents_response = octo.get(contents_url, None::<&()>).send().await?;
+
+    let contents = contents_response.json::<Vec<serde_json::Value>>().await?;*/
+
+    let mut contents = octo.repos(owner, repo).get_content().send().await.unwrap();
+
+    let mut readme_count = 0;
+
+    for content in contents.take_items() {
+        let name = content.name.as_str();
+        if name.to_lowercase().starts_with("readme") {
+            readme_count += 1;
+        }
+    }
+
+    if readme_count > 1 {
+        Ok(1)
+    } else {
+        Ok(0)
+    }
+}
+
+pub async fn are_all_issues_closed(octo: Octocrab, owner: String, repo: String) -> Result<i32, octocrab::Error> {
+    /*let issues_url = format!("/repos/{}/issues", repo);
+    let issues_response = octo.get(issues_url, None::<&()>).send().await?;
+
+    let issues = issues_response.json::<Vec<serde_json::Value>>().await?;*/
+
+    let issues = octo.issues(owner, repo).list().state(params::State::Closed).send().await.unwrap();
+
+    if issues.total_count > Some(1)
+    {
+        return Ok(0);
+    }
+    Ok(1)
+}
+
+// // has tests (1/3 weight)
+// pub async fn has_testing_suite(octo: Octocrab, owner: String, repo: String) -> Result<i32, octocrab::Error> {
+//     let mut contents = octo.repos(owner, repo).get_content().send().await?;
+
+//     for content in contents.take_items() {
+//         let content_name = content.name.as_str();
+//         if content_name == "tests" {
+//             return Ok(1);
+//         }
+//     }
+
+//     Ok(0)
+// }
+
+
+pub async fn has_testing_suite(octo: Octocrab, owner: String, repo: String) -> Result<i32, octocrab::Error> {
+    let mut contents = match octo.repos(owner, repo).get_content().send().await {
+        Ok(content_items) => content_items,
+        Err(e) => return Err(e),
+    };
+
+    for content in contents.take_items() {
+        let content_name = content.name.as_str();
+        if content_name == "tests" {
+            return Ok(1);
+        }
+    }
+
+    Ok(0)
+}
+
+// check number of releases (1/3 weight)
+pub async fn check_number_of_releases(octo: Octocrab, owner: String, repo: String) -> Result<i32, octocrab::Error> {
+    let releases = match octo.repos(owner, repo).releases().list().send().await {
+        Ok(page) => page,
+        Err(e) => return Err(e),
+    };
+
+    if releases.total_count > Some(10) {
+        Ok(1)
+    } else {
+        Ok(0)
+    }
 }

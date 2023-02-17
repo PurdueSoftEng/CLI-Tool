@@ -21,8 +21,6 @@ jobs:
     - uses: space-wizards/submodule-dependency@v0.1.5
     - uses: snickerbockers/submodules-init@v4
     - name: Build
-      working-directory: /
       run: cargo build --verbose
     - name: Run tests
-      working-directory: /
       run: cargo run -- test.txt

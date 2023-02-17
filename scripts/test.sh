@@ -1,15 +1,21 @@
-#!/bin/bash
+#!/bin/sh
 
-# Mode 3: Run Tests
-run_output = $(cargo test --format=terse)
-test_results = $(echo "$output" | grep "test result")
-total_tests = $(echo "$test_results" | awk '{print $4}')
-passed_tests = $(echo "$test_results" | awk '{print $3}')
-test_percentage = $(echo "($passed_tests / $total_tests) * 100" | bc -1)
-coverage_test = $(printf "%.2f $test_percentage)
-# Format output
-echo "Total Tests: $total_tests" # Total Tests: #
-echo "Passed Tests: $passed_tests" # Passed Tests: #
-echo "Coverage Test Percentage: $coverage_test" # Coverage Test Percentage: #
-# #/## test cases passed. ##% line coverage achieved. 
-echo "$passed_tests/$total_tests test cases passed. $coverage_test line coverage achieved."
+cd tool
+cd tool
+if [ -e "log/test.log" ]; then
+    rm log/test.log
+fi
+cargo test > log/test.log 2>&1
+
+
+if [ $? -eq 0 ]; then
+  failed=$(grep -o "FAILED" log/test.log | wc -l)
+  passed=$(grep -o "PASSED" log/test.log | wc -l)
+  total=$failed + $passed
+  echo "Total Tests: $total"
+  echo "Passed Tests: $passed"
+  echo "Coverage Test Percentage: unknown"
+else
+  echo "Testing failed. Check test.log for more information."
+fi
+

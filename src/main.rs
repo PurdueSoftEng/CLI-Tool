@@ -159,7 +159,7 @@ async fn main() -> Result<()> {
 
     for repository in &mut repos_list{
         calc_metrics(repository, token.clone(), owner.clone(), repo_name.clone()).await;
-        sort_repositories(repos_list.as_mut());
+        //sort_repositories(repos_list.as_mut());
         create_ndjson(repository.url.as_str(), repository.overall(), repository.rampup(), repository.correct(), repository.bus(), repository.responsive(), repository.license());
     }
 
@@ -251,18 +251,18 @@ mod tests {
     }
 }
 
-fn sort_repositories(repositories: &mut Vec<GithubRepo>) {
-    repositories.sort_by(|a, b| {
-        let overall_cmp = b.overall().cmp(&a.overall());
-        if overall_cmp == Ordering::Equal {
-            let bus_cmp = b.bus().cmp(&a.bus());
-            if bus_cmp == Ordering::Equal {
-                a.license().cmp(&b.license())
-            } else {
-                bus_cmp
-            }
-        } else {
-            overall_cmp
-        }
-    });
-}
+// fn sort_repositories(repositories: &mut Vec<GithubRepo>) {
+//     repositories.sort_by(|a, b| {
+//         let overall_cmp = b.overall().cmp(&a.overall());
+//         if overall_cmp == Ordering::Equal {
+//             let bus_cmp = b.bus().cmp(&a.bus());
+//             if bus_cmp == Ordering::Equal {
+//                 a.license().cmp(&b.license())
+//             } else {
+//                 bus_cmp
+//             }
+//         } else {
+//             overall_cmp
+//         }
+//     });
+// }

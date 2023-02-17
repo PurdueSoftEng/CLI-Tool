@@ -3,7 +3,6 @@ extern crate octocrab;
 use serde_json;
 
 use octocrab::{Octocrab, Page, Result, models::{self, repos::RepoCommit}, params};
-use tokio::net::windows::named_pipe::PipeEnd::Client;
 use std::error::Error;
 use chrono::{Duration, Utc, NaiveDate, DateTime};
 

@@ -142,6 +142,22 @@ fn extract_owner_and_repo(url: &str) -> Option<(String, String)> {
     Some((captures[1].to_string(), captures[2].to_string()))
 }
 
+fn sort_repositories(repositories: &mut Vec<GithubRepo>) {
+    repositories.sort_by(|a, b| {
+        let overall_cmp = b.overall().cmp(&a.overall());
+        if overall_cmp == Ordering::Equal {
+            let bus_cmp = b.bus().cmp(&a.bus());
+            if bus_cmp == Ordering::Equal {
+                a.license().cmp(&b.license())
+            } else {
+                bus_cmp
+            }
+        } else {
+            overall_cmp
+        }
+    });
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();

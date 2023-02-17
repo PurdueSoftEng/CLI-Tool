@@ -151,6 +151,7 @@ async fn main() -> Result<()> {
     let mut handle_lock = stdout.lock();
     let token: String = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
     let mut repos_list = read_github_repos_from_file(&args.path);
+    //println!("{}", repos_list);
     let repo_info = extract_owner_and_repo(repos_list.first().unwrap().url.as_str());
     let owner = repo_info.clone().unwrap().0;
     let repo_name = repo_info.clone().unwrap().1;

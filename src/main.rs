@@ -159,7 +159,7 @@ async fn main() -> Result<()> {
 
     for repository in &mut repos_list{
         calc_metrics(repository, token.clone(), owner.clone(), repo_name.clone()).await;
-        sort_repositories(repos_list.as_mut());
+        //sort_repositories(repos_list.as_mut());
         create_ndjson(repository.url.as_str(), repository.overall(), repository.rampup(), repository.correct(), repository.bus(), repository.responsive(), repository.license());
     }
 

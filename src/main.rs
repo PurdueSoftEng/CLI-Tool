@@ -223,12 +223,12 @@ mod tests {
 fn create_ndjson(url: &str, net_score: f32, ramp_up_score: f32, correctness_score: f32, bus_factor_score: f32, responsive_maintainer_score: f32, license_score: f32) {
     let json = json!({
         "URL": url,
-        "NET_SCORE": net_score,
-        "RAMP_UP_SCORE": ramp_up_score,
-        "CORRECTNESS_SCORE": correctness_score,
-        "BUS_FACTOR_SCORE": bus_factor_score,
-        "RESPONSIVE_MAINTAINER_SCORE": responsive_maintainer_score,
-        "LICENSE_SCORE": license_score
+        "NET_SCORE": format!("{:.1}", net_score),
+        "RAMP_UP_SCORE": format!("{:.1}", ramp_up_score),
+        "CORRECTNESS_SCORE": format!("{:.1}", correctness_score),
+        "BUS_FACTOR_SCORE": format!("{:.1}", bus_factor_score),
+        "RESPONSIVE_MAINTAINER_SCORE": format!("{:.1}", responsive_maintainer_score),
+        "LICENSE_SCORE": format!("{:.1}", license_score),
     });
     let ndjson = json.to_string();
     println!("{}", ndjson);

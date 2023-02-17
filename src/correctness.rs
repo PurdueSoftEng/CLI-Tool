@@ -2,8 +2,9 @@ extern crate octocrab;
 use octocrab::{Octocrab, Error};
 use crate::octo;
 
+pub async fn get_weighted_score(token: String, owner: String, repo: String) -> Result<f64, Error> {
+    let octo = Octocrab::builder().personal_token(token).build().unwrap();
 
-pub async fn get_weighted_score(octo: Octocrab, owner: String, repo: String) -> Result<f64, Error> {
     let first = octo::are_all_issues_closed(octo.clone(), owner.clone(), repo.clone()).await?;
     let second = octo::has_testing_suite(octo.clone(), owner.clone(), repo.clone()).await?;
     let third = octo::check_number_of_releases(octo.clone(), owner.clone(), repo.clone()).await?;

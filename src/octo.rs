@@ -371,14 +371,26 @@ pub async fn are_all_issues_closed(octo: Octocrab, owner: String, repo: String) 
     Ok(1)
 }
 
-// has tests (1/3 weight)
+// // has tests (1/3 weight)
+// pub async fn has_testing_suite(octo: Octocrab, owner: String, repo: String) -> Result<i32, octocrab::Error> {
+//     let mut contents = octo.repos(owner, repo).get_content().send().await?;
+
+//     for content in contents.take_items() {
+//         let content_name = content.name.as_str();
+//         if content_name == "tests" {
+//             return Ok(1);
+//         }
+//     }
+
+//     Ok(0)
+// }
+
+
 pub async fn has_testing_suite(octo: Octocrab, owner: String, repo: String) -> Result<i32, octocrab::Error> {
-    /*let contents_url = format!("/repos/{}/contents", repo);
-    let contents_response = octo.get(contents_url, None::<&()>).send().await?;
-
-    let contents = contents_response.json::<Vec<serde_json::Value>>().await?;*/
-
-    let mut contents = octo.repos(owner, repo).get_content().send().await.unwrap();
+    let mut contents = match octo.repos(owner, repo).get_content().send().await {
+        Ok(content_items) => content_items,
+        Err(e) => return Err(e),
+    };
 
     for content in contents.take_items() {
         let content_name = content.name.as_str();
@@ -392,12 +404,10 @@ pub async fn has_testing_suite(octo: Octocrab, owner: String, repo: String) -> R
 
 // check number of releases (1/3 weight)
 pub async fn check_number_of_releases(octo: Octocrab, owner: String, repo: String) -> Result<i32, octocrab::Error> {
-    /*let releases_url = format!("/repos/{}/releases", repo);
-    let releases_response:  = octo.get(releases_url, None::<&()>).await;
-
-    let releases = releases_response.json::<Vec<serde_json::Value>>().await?;*/
-
-    let releases = octo.repos(owner, repo).releases().list().send().await.unwrap();
+    let releases = match octo.repos(owner, repo).releases().list().send().await {
+        Ok(page) => page,
+        Err(e) => return Err(e),
+    };
 
     if releases.total_count > Some(10) {
         Ok(1)

@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 cli = { version = "0.1.0", path = "cli" }
+tokio = { version = "1.25.0", features = ["macros"] }

@@ -21,6 +21,8 @@ use std::env;
 
 use regex::Regex;
 
+use std::fmt;
+
 use std::cmp::Ordering;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -46,20 +48,25 @@ struct Cli {
 #[derive(Debug)]
 struct CustomError(String);
 
-/*#[derive(Serialize, Deserialize, Debug)]
-struct Output {
-
-}*/
-
-// #[derive(Debug)]
-// struct GithubRepo {
-//     url: String,
-//     scores: Vec<f32>,
-// }
 #[derive(Debug, Clone)]
 pub struct GithubRepo {
     url: String,
     scores: Vec<f32>,
+}
+
+impl fmt::Display for GithubRepo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "Metrics {{")?;
+        writeln!(f, "    URL: {}", self.url)?;
+        writeln!(f, "    ramp_up: {}", self.rampup())?;
+        writeln!(f, "    correctness: {}", self.correct())?;
+        writeln!(f, "    bus_factor: {}", self.bus())?;
+        writeln!(f, "    responsiveness: {}", self.responsive())?;
+        writeln!(f, "    license: {}", self.license())?;
+        writeln!(f, "    version: {}", self.version())?;
+        writeln!(f, "    review: {}", self.review())?;
+        writeln!(f, "}}")
+    }
 }
 
 impl GithubRepo {
@@ -114,6 +121,22 @@ impl GithubRepo {
     fn rampup_set(&mut self, rampup_score: f32) {
         self.scores[5] = rampup_score;
     }
+
+    pub fn version(&self) -> f32 {
+        self.scores[6]
+    }
+
+    fn version_set(&mut self, score: f32) {
+        self.scores[6] = score;
+    }
+
+    pub fn review(&self) -> f32 {
+        self.scores[7]
+    }
+
+    fn review_set(&mut self, score: f32) {
+        self.scores[7] = score;
+    }
 }
 
 pub async fn working() -> bool {
@@ -126,8 +149,52 @@ pub async fn working() -> bool {
 }
 
 pub async fn rate(url: &str, token: &str) -> Option<GithubRepo> {
-    let (owner, repo) = extract_owner_and_repo(&url)?;
-    let scores = vec![-1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
+    let u = reqwest::Url::parse(url).ok()?;
+    let sch = u.scheme();
+    if sch != "https" {
+        return None;
+    }
+
+    // check domain
+    let ghurl: String;
+    if let Some(domain) = u.domain() {
+        if domain == "www.npmjs.com" {
+            // handle npm URLs
+            let npm_url = url.replace(
+                "https://www.npmjs.com/package/",
+                "https://registry.npmjs.org/",
+            );
+
+            let input = reqwest::get(npm_url).await.ok()?.text().await.ok()?;
+
+            // parse url into generic JSON value
+            let root: Value = serde_json::from_str(&input).ok()?;
+
+            // access element using .get()
+            let giturl: Option<&str> = root
+                .get("repository")
+                .and_then(|value| value.get("url"))
+                .and_then(|value| value.as_str());
+
+            // dereference the url so we can use .replace() later
+            let derefurl = &giturl.as_deref()?;
+
+            // Do not need to check if url contains git+, just do replace. That would take care of it
+            let derefurl = derefurl.replace("git+", "");
+            let derefurl = derefurl.replace(".git", "");
+            ghurl = derefurl;
+        } else if domain != "github.com" {
+            return None;
+        } else {
+            ghurl = url.to_string();
+        }
+    } else {
+        return None;
+    }
+    let (owner, repo) = extract_owner_and_repo(&ghurl)?;
+
+    // calculate metrics
+    let scores = vec![-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
     let mut github = GithubRepo::new(url.to_string(), scores);
     calc_metrics(&mut github, token.to_string(), owner, repo).await;
     Some(github)
@@ -154,7 +221,6 @@ pub async fn rate(url: &str, token: &str) -> Option<GithubRepo> {
 //
 //     repos
 // }
-
 fn extract_owner_and_repo(url: &str) -> Option<(String, String)> {
     let re = Regex::new(r"https://github.com/([^/]+)/([^/]+)/?").unwrap();
     let captures = re.captures(url)?;
@@ -267,11 +333,6 @@ async fn calc_metrics(repository: &mut GithubRepo, token: String, owner: String,
                 .to_string(),
         )
         .await as f32;
-        println!(
-            "license score: {:?} {:?}",
-            license_layer.get("key").unwrap().to_string(),
-            license_score
-        );
     }
     repository.license_set(license_score);
 

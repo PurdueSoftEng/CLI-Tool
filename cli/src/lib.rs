@@ -11,6 +11,9 @@ use octocrab::{
     params, Octocrab, Page,
 };
 
+use anyhow::anyhow;
+use reqwest::header;
+
 use serde_json::{json, Map, Value};
 
 use dotenv::dotenv;
@@ -113,7 +116,12 @@ impl GithubRepo {
     }
 }
 
-pub fn working() -> bool {
+pub async fn working() -> bool {
+    println!(
+        "{:?} {:?}",
+        "bsd-3-clause".to_string(),
+        calc_license::calc_licenses("bsd-3-clause".to_string()).await
+    );
     true
 }
 
@@ -125,27 +133,27 @@ pub async fn rate(url: &str, token: &str) -> Option<GithubRepo> {
     Some(github)
 }
 
-fn read_github_repos_from_file(filename: &str) -> Vec<GithubRepo> {
-    let file = match File::open(filename) {
-        Ok(file) => file,
-        Err(err) => {
-            println!("Error opening file: {}", err);
-            return vec![];
-        }
-    };
-
-    let reader = BufReader::new(file);
-
-    let mut repos = vec![];
-    for line in reader.lines() {
-        let line = line.unwrap();
-        let scores = vec![-1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
-        let repo = GithubRepo::new(line, scores);
-        repos.push(repo);
-    }
-
-    repos
-}
+// fn read_github_repos_from_file(filename: &str) -> Vec<GithubRepo> {
+//     let file = match File::open(filename) {
+//         Ok(file) => file,
+//         Err(err) => {
+//             println!("Error opening file: {}", err);
+//             return vec![];
+//         }
+//     };
+//
+//     let reader = BufReader::new(file);
+//
+//     let mut repos = vec![];
+//     for line in reader.lines() {
+//         let line = line.unwrap();
+//         let scores = vec![-1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
+//         let repo = GithubRepo::new(line, scores);
+//         repos.push(repo);
+//     }
+//
+//     repos
+// }
 
 fn extract_owner_and_repo(url: &str) -> Option<(String, String)> {
     let re = Regex::new(r"https://github.com/([^/]+)/([^/]+)/?").unwrap();
@@ -154,42 +162,80 @@ fn extract_owner_and_repo(url: &str) -> Option<(String, String)> {
     Some((captures[1].to_string(), captures[2].to_string()))
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    env_logger::init();
-    dotenv().ok();
-    let args = Cli::parse();
-    let stdout = io::stdout();
-    let mut handle_lock = stdout.lock();
-    let token: String = env::var("GITHUB_TOKEN")
-        .expect("GITHUB_TOKEN env variable is required")
-        .into();
-    let mut repos_list = read_github_repos_from_file(&args.path);
-    //println!("{}", repos_list);
-    let repo_info = extract_owner_and_repo(repos_list.first().unwrap().url.as_str());
-    let owner = repo_info.clone().unwrap().0;
-    let repo_name = repo_info.clone().unwrap().1;
+// #[tokio::main]
+// async fn main() -> Result<()> {
+//     env_logger::init();
+//     dotenv().ok();
+//     let args = Cli::parse();
+//     let stdout = io::stdout();
+//     let mut handle_lock = stdout.lock();
+//     let token: String = env::var("GITHUB_TOKEN")
+//         .expect("GITHUB_TOKEN env variable is required")
+//         .into();
+//     let mut repos_list = read_github_repos_from_file(&args.path);
+//     //println!("{}", repos_list);
+//     let repo_info = extract_owner_and_repo(repos_list.first().unwrap().url.as_str());
+//     let owner = repo_info.clone().unwrap().0;
+//     let repo_name = repo_info.clone().unwrap().1;
+//
+//     let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await;
+//
+//     for repository in &mut repos_list {
+//         calc_metrics(repository, token.clone(), owner.clone(), repo_name.clone()).await;
+//         //sort_repositories(repos_list.as_mut());
+//         create_ndjson(
+//             repository.url.as_str(),
+//             repository.overall(),
+//             repository.rampup(),
+//             repository.correct(),
+//             repository.bus(),
+//             repository.responsive(),
+//             repository.license(),
+//         );
+//     }
+//
+//     Ok(())
+// }
 
-    let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await;
+// GitHub GraphQL API
+async fn graphql(client: reqwest::Client, query: String) -> reqwest::Result<reqwest::Response> {
+    client
+        .post("https://api.github.com/graphql")
+        .bearer_auth(format!("{}", std::env::var("GITHUB_TOKEN").unwrap()))
+        .body(query)
+        .send()
+        .await
+}
 
-    for repository in &mut repos_list {
-        calc_metrics(repository, token.clone(), owner.clone(), repo_name.clone()).await;
-        //sort_repositories(repos_list.as_mut());
-        create_ndjson(
-            repository.url.as_str(),
-            repository.overall(),
-            repository.rampup(),
-            repository.correct(),
-            repository.bus(),
-            repository.responsive(),
-            repository.license(),
-        );
-    }
+// GraphQL API call in json format
+async fn graph_json(client: reqwest::Client, query: String) -> reqwest::Result<serde_json::Value> {
+    graphql(client, query)
+        .await?
+        .json::<serde_json::Value>()
+        .await
+}
 
-    Ok(())
+fn client(token: &str) -> anyhow::Result<reqwest::Client> {
+    let mut headers = header::HeaderMap::new();
+    let t = format!("Bearer {}", std::env::var("GITHUB_TOKEN")?);
+    headers.insert(header::AUTHORIZATION, header::HeaderValue::from_str(&t)?);
+    headers.insert(
+        header::ACCEPT,
+        header::HeaderValue::from_static("application/vnd.github+json"),
+    );
+    headers.insert(
+        "X-GitHub-Api-Version",
+        header::HeaderValue::from_static("2022-11-28"),
+    );
+    reqwest::Client::builder()
+        .user_agent("ECE461_Team19_CLI")
+        .default_headers(headers)
+        .build()
+        .context("failed to create http client to calculate metrics")
 }
 
 async fn calc_metrics(repository: &mut GithubRepo, token: String, owner: String, repo: String) {
+    // calculate responsiveness
     let mut issue_response_times =
         octo::get_issue_response_times(token.clone(), owner.clone(), repo.clone())
             .await
@@ -200,6 +246,7 @@ async fn calc_metrics(repository: &mut GithubRepo, token: String, owner: String,
     ) as f32;
     repository.responsive_set(responsive_score);
 
+    // calculate license compatibility
     let mut resp =
         octo::get_license(token.clone(), owner.clone().as_str(), repo.clone().as_str()).await;
     let data_layer = resp.get_mut("data").expect("Data key not found");
@@ -209,17 +256,26 @@ async fn calc_metrics(repository: &mut GithubRepo, token: String, owner: String,
     let license_layer = repository_layer
         .get_mut("licenseInfo")
         .expect("License key not found");
-    let mut license_score = 0;
+    let mut license_score = 0.0;
     if license_layer.get("key").is_some() {
-        license_score =
-            calc_license::calc_licenses(license_layer.get("key").unwrap().to_string()).await;
+        license_score = calc_license::calc_licenses(
+            license_layer
+                .get("key")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .to_string(),
+        )
+        .await as f32;
         println!(
-            "license score: {}",
-            license_layer.get("key").unwrap().to_string()
+            "license score: {:?} {:?}",
+            license_layer.get("key").unwrap().to_string(),
+            license_score
         );
     }
-    repository.license_set(license_score.into());
+    repository.license_set(license_score);
 
+    // calculate ramp up time
     let octo = Octocrab::builder()
         .personal_token(token.clone())
         .build()
@@ -228,23 +284,34 @@ async fn calc_metrics(repository: &mut GithubRepo, token: String, owner: String,
     let mut ramp_up_score = ramp_up::get_weighted_score(octo.clone(), owner.clone(), repo.clone())
         .await
         .unwrap();
-    //println!("ramp up score: {}", ramp_up_score);
     repository.rampup_set(ramp_up_score as f32);
 
+    // calculate correctness
     let mut correctness_score =
         correctness::get_weighted_score(token.clone(), owner.clone(), repo.clone())
             .await
             .unwrap();
-    //println!("correctness: {}", correctness_score);
-    //let correctness_score = 0;
     repository.correct_set(correctness_score as f32);
 
-    let mut bus_factor_score = 0;
-    //let bus_factor_score = calc_bus_factor::calculate_bus_factor(token.clone(), owner.clone(), repo.clone()).await;
-    repository.bus_set(bus_factor_score as f32);
+    let client = client(&token).unwrap();
 
-    let mut net_score_score = 0.0;
-    repository.overall_set(net_score_score);
+    // calculate bus factor
+    let bus = graph_json(client,
+            format!("{{\"query\" : \"query {{ repository(owner:\\\"{}\\\", name:\\\"{}\\\") {{ mentionableUsers {{ totalCount }} }} }}\" }}", owner, repo)
+            ).await.unwrap();
+    let collaborators = bus["data"]["repository"]["mentionableUsers"]["totalCount"]
+        .as_i64()
+        .unwrap();
+    let bus_factor_score: f32 = ((2.0 * collaborators as f32) / (collaborators as f32 + 1.0)) - 1.0;
+    repository.bus_set(bus_factor_score);
+
+    repository.overall_set(
+        license_score as f32
+            * (correctness_score as f32 * 0.5
+                + ramp_up_score as f32 * 0.2
+                + responsive_score * 0.2
+                + bus_factor_score * 0.1),
+    );
 }
 
 fn create_ndjson(
@@ -269,50 +336,50 @@ fn create_ndjson(
     println!("{}", ndjson);
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::calc_responsive_maintainer::calc_responsive_maintainer;
-    use std::fs::File;
-    use std::io::prelude::*;
-    use tempfile::tempdir;
-
-    #[test]
-    fn test_calc_responsive_maintainer() {
-        let owner = "cloudinary";
-        let repo_name = "cloudinary_npm";
-        let expected_output = 0.0;
-        let token: String = std::env::var("GITHUB_TOKEN")
-            .expect("GITHUB_TOKEN env variable is required")
-            .into();
-
-        let result = calc_responsive_maintainer::calc_responsive_maintainer(0.0, 0.0);
-        assert_eq!(result, expected_output);
-    }
-
-    #[test]
-    fn test_read_github_repos_from_file() {
-        let temp_dir = tempdir().unwrap();
-        let test_file_path = temp_dir.path().join("test_file.txt");
-        let mut file = File::create(&test_file_path).unwrap();
-        file.write_all(b"https://github.com/lodash/lodash\nhttps://github.com/nullivex/nodist\nhttps://www.npmjs.com/package/browserify").unwrap();
-
-        let repos = read_github_repos_from_file(test_file_path.to_str().unwrap());
-        assert_eq!(repos.len(), 3);
-        assert_eq!(
-            repos.get(0).unwrap().url,
-            String::from("https://github.com/lodash/lodash")
-        );
-        assert_eq!(
-            repos.get(1).unwrap().url,
-            String::from("https://github.com/nullivex/nodist")
-        );
-        assert_eq!(
-            repos.get(2).unwrap().url,
-            String::from("https://www.npmjs.com/package/browserify")
-        );
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use crate::calc_responsive_maintainer::calc_responsive_maintainer;
+//     use std::fs::File;
+//     use std::io::prelude::*;
+//     use tempfile::tempdir;
+//
+//     #[test]
+//     fn test_calc_responsive_maintainer() {
+//         let owner = "cloudinary";
+//         let repo_name = "cloudinary_npm";
+//         let expected_output = 0.0;
+//         let token: String = std::env::var("GITHUB_TOKEN")
+//             .expect("GITHUB_TOKEN env variable is required")
+//             .into();
+//
+//         let result = calc_responsive_maintainer::calc_responsive_maintainer(0.0, 0.0);
+//         assert_eq!(result, expected_output);
+//     }
+//
+//     #[test]
+//     fn test_read_github_repos_from_file() {
+//         let temp_dir = tempdir().unwrap();
+//         let test_file_path = temp_dir.path().join("test_file.txt");
+//         let mut file = File::create(&test_file_path).unwrap();
+//         file.write_all(b"https://github.com/lodash/lodash\nhttps://github.com/nullivex/nodist\nhttps://www.npmjs.com/package/browserify").unwrap();
+//
+//         let repos = read_github_repos_from_file(test_file_path.to_str().unwrap());
+//         assert_eq!(repos.len(), 3);
+//         assert_eq!(
+//             repos.get(0).unwrap().url,
+//             String::from("https://github.com/lodash/lodash")
+//         );
+//         assert_eq!(
+//             repos.get(1).unwrap().url,
+//             String::from("https://github.com/nullivex/nodist")
+//         );
+//         assert_eq!(
+//             repos.get(2).unwrap().url,
+//             String::from("https://www.npmjs.com/package/browserify")
+//         );
+//     }
+// }
 
 // fn sort_repositories(repositories: &mut Vec<GithubRepo>) {
 //     repositories.sort_by(|a, b| {

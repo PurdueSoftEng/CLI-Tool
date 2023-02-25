@@ -1,6 +1,6 @@
 # `cli`
 
-The `cli` crate is modifies from project part 1 of another team.
+The `cli` crate is modified from project part 1 of another team.
 
 Exposed functions:
 

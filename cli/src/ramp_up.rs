@@ -8,10 +8,13 @@ use crate::octo;
 // its about. If there is a README the repository will recieve a score of 1. If not
 // it will get a score of 0.
 pub async fn get_weighted_score(octo: Octocrab, owner: String, repo: String) -> Result<f64, Error> {
-    let first = octo::has_readme(octo.clone(), owner.clone(), repo.clone()).await?;
-    let second = octo::check_multiple_readmes(octo.clone(), owner.clone(), repo.clone()).await?;
+    let first = octo::check_readme(octo.clone(), owner.clone(), repo.clone()).await?;
 
-    let total_score = (first as f64 / 2.0) + (second as f64 / 2.0);
-
-    Ok(total_score)
+    if first >= 2 {
+        Ok(1.0)
+    } else if first == 1 {
+        Ok(0.5)
+    } else {
+        Ok(0.0)
+    }
 }

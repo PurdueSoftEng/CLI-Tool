@@ -328,8 +328,6 @@ pub async fn get_issue_response_times(
     let responsive_maintainer_ness =
         ((average_time_to_response / max_time_to_response as f64).abs()).abs();
 
-    println!("{:?} {:?}", average_time_to_response, max_time_to_response);
-
     let mut response_vec = Vec::new();
     response_vec.push(average_time_to_response);
     response_vec.push(max_time_to_response as f64);
@@ -390,7 +388,7 @@ pub async fn get_contributors_with_percentages(
 // the ramp up score. A README allows others to get versed in a project and learn what
 // its about. If there is a README the repository will recieve a score of 1. If not
 // it will get a score of 0.
-pub async fn has_readme(
+pub async fn check_readme(
     octo: Octocrab,
     owner: String,
     repo: String,
@@ -405,12 +403,8 @@ pub async fn has_readme(
             readme_count += 1;
         }
     }
-
-    if readme_count >= 1 {
-        Ok(1)
-    } else {
-        Ok(0)
-    }
+    
+    Ok(readme_count)
 }
 
 pub async fn check_multiple_readmes(

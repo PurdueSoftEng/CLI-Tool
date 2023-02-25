@@ -12,7 +12,6 @@ use octocrab::{
 };
 
 use anyhow::anyhow;
-use reqwest::header;
 
 use serde_json::{json, Map, Value};
 
@@ -33,6 +32,9 @@ mod calc_responsive_maintainer;
 mod correctness;
 mod octo;
 mod ramp_up;
+mod reqw;
+mod review;
+mod version;
 
 extern crate serde;
 extern crate serde_json;
@@ -48,13 +50,13 @@ struct Cli {
 #[derive(Debug)]
 struct CustomError(String);
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct GithubRepo {
     url: String,
     scores: Vec<f32>,
 }
 
-impl fmt::Display for GithubRepo {
+impl fmt::Debug for GithubRepo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "Metrics {{")?;
         writeln!(f, "    URL: {}", self.url)?;
@@ -263,43 +265,6 @@ fn extract_owner_and_repo(url: &str) -> Option<(String, String)> {
 //     Ok(())
 // }
 
-// GitHub GraphQL API
-async fn graphql(client: reqwest::Client, query: String) -> reqwest::Result<reqwest::Response> {
-    client
-        .post("https://api.github.com/graphql")
-        .bearer_auth(format!("{}", std::env::var("GITHUB_TOKEN").unwrap()))
-        .body(query)
-        .send()
-        .await
-}
-
-// GraphQL API call in json format
-async fn graph_json(client: reqwest::Client, query: String) -> reqwest::Result<serde_json::Value> {
-    graphql(client, query)
-        .await?
-        .json::<serde_json::Value>()
-        .await
-}
-
-fn client(token: &str) -> anyhow::Result<reqwest::Client> {
-    let mut headers = header::HeaderMap::new();
-    let t = format!("Bearer {}", std::env::var("GITHUB_TOKEN")?);
-    headers.insert(header::AUTHORIZATION, header::HeaderValue::from_str(&t)?);
-    headers.insert(
-        header::ACCEPT,
-        header::HeaderValue::from_static("application/vnd.github+json"),
-    );
-    headers.insert(
-        "X-GitHub-Api-Version",
-        header::HeaderValue::from_static("2022-11-28"),
-    );
-    reqwest::Client::builder()
-        .user_agent("ECE461_Team19_CLI")
-        .default_headers(headers)
-        .build()
-        .context("failed to create http client to calculate metrics")
-}
-
 async fn calc_metrics(repository: &mut GithubRepo, token: String, owner: String, repo: String) {
     // calculate responsiveness
     let mut issue_response_times =
@@ -354,10 +319,10 @@ async fn calc_metrics(repository: &mut GithubRepo, token: String, owner: String,
             .unwrap();
     repository.correct_set(correctness_score as f32);
 
-    let client = client(&token).unwrap();
+    let client = reqw::client(&token).unwrap();
 
     // calculate bus factor
-    let bus = graph_json(client,
+    let bus = reqw::graph_json(&client,
             format!("{{\"query\" : \"query {{ repository(owner:\\\"{}\\\", name:\\\"{}\\\") {{ mentionableUsers {{ totalCount }} }} }}\" }}", owner, repo)
             ).await.unwrap();
     let collaborators = bus["data"]["repository"]["mentionableUsers"]["totalCount"]
@@ -365,6 +330,14 @@ async fn calc_metrics(repository: &mut GithubRepo, token: String, owner: String,
         .unwrap();
     let bus_factor_score: f32 = ((2.0 * collaborators as f32) / (collaborators as f32 + 1.0)) - 1.0;
     repository.bus_set(bus_factor_score);
+
+    // calculate version pinning
+    let ver = version::calc_version(&client, &owner, &repo).await;
+    repository.version_set(ver);
+
+    // calculate code review percentage
+    let rev = review::calc_review(&client, &owner, &repo).await;
+    repository.review_set(rev);
 
     repository.overall_set(
         license_score as f32

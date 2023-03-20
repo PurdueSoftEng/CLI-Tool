@@ -2,6 +2,9 @@
 
 use clap::Parser;
 use log::{info, warn, debug, LevelFilter};
+use log4rs::append::file::FileAppender;
+use log4rs::encode::pattern::PatternEncoder;
+use log4rs::config::{Appender, Config, Root};
 use std::io::{self, Write};
 use anyhow::{Context, Result};
 extern crate octocrab;
@@ -12,6 +15,7 @@ use serde_json::{json, Value, Map};
 
 use dotenv::dotenv;
 use std::env;
+use std::path::Path;
 
 use regex::Regex;
 
@@ -139,12 +143,37 @@ fn extract_owner_and_repo(url: &str) -> Option<(String, String)> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    env_logger::init();
+    //env_logger::init();
     dotenv().ok();
     let args = Cli::parse();
     let stdout = io::stdout();
     let mut handle_lock = stdout.lock();
     let token: String = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
+    let log_file = env::var("LOG_FILE").expect("LOG_FILE environment variable not set");
+    let log_level = env::var("LOG_LEVEL").expect("LOG_LEVEL environment variable not set");
+    let log_path = Path::new(&log_file);
+
+    let mut logfile = FileAppender::builder()
+        .encoder(Box::new(PatternEncoder::new("{l} - {m}\n")))
+        .build(log_path)?;
+
+    let log_level = match log_level.as_str() {
+        "1" => LevelFilter::Error,
+        "2" => LevelFilter::Warn,
+        "3" => LevelFilter::Info,
+        _ => panic!("Invalid log level specified: {}", log_level),
+    };
+
+    let config = Config::builder()
+        .appender(Appender::builder().build("logfile", Box::new(logfile)))
+        .build(Root::builder()
+                   .appender("logfile")
+                   .build(log_level))?;
+
+    log4rs::init_config(config)?;
+
+    info!("Logger initialized");
+
     let mut repos_list = read_github_repos_from_file(&args.path);
     let repo_info = extract_owner_and_repo(repos_list.first().unwrap().url.as_str());
     let owner = repo_info.clone().unwrap().0;

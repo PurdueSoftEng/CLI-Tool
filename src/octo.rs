@@ -403,15 +403,40 @@ pub async fn has_testing_suite(octo: Octocrab, owner: String, repo: String) -> R
 }
 
 // check number of releases (1/3 weight)
-pub async fn check_number_of_releases(octo: Octocrab, owner: String, repo: String) -> Result<i32, octocrab::Error> {
-    let releases = match octo.repos(owner, repo).releases().list().send().await {
-        Ok(page) => page,
-        Err(e) => return Err(e),
-    };
+// pub async fn check_number_of_releases(octo: Octocrab, owner: String, repo: String) -> Result<i32, octocrab::Error> {
+//     let releases = match octo.repos(owner, repo).releases().list().send().await {
+//         Ok(page) => page,
+//         Err(e) => return Err(e),
+//     };
 
-    if releases.total_count > Some(10) {
-        Ok(1)
-    } else {
-        Ok(0)
+//     if releases.total_count > Some(10) {
+//         Ok(1)
+//     } else {
+//         Ok(0)
+//     }
+// }
+
+use octocrab::models::repos::Release;
+
+pub async fn check_number_of_releases(token: String, owner: String, repo: String) -> Result<usize, octocrab::Error> {
+    let octo = Octocrab::builder().personal_token(token).build().unwrap();
+    //let temp = octo.repos(owner.clone(), repo.clone()).list_forks().send().await?;
+    let octocrab = octocrab::Octocrab::default();
+    let page = octocrab.repos("PurdueSoftEng", "CLI-Tool")
+         .releases()
+         .list()
+         // Optional Parameters
+         .per_page(100)
+         // Send the request
+         .send()
+         .await?;
+    //println!("made it");
+    let releases_page = octo.repos(owner, repo).releases().list().send().await?;
+    //let releases = releases_page.items;
+    let releases = page.items;
+
+    if releases.is_empty() {
+        return Ok(0);
     }
+    Ok(releases.len())
 }

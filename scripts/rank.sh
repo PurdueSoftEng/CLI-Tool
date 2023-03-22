@@ -4,4 +4,4 @@ echo "$GITHUB_TOKEN"
 if [ -e "log/run.log" ]; then
     rm log/run.log
 fi
-source .env | cargo run --quiet -- $1
+cargo run --quiet -- $1

@@ -260,7 +260,7 @@ mod tests {
         let owner = "cloudinary";
         let repo_name = "cloudinary_npm";
         let expected_output = 0.0;
-        let token: String = std::env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
+        //let token: String = std::env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
 
         let result = calc_responsive_maintainer::calc_responsive_maintainer(0.0, 0.0);
         assert_eq!(result, expected_output);

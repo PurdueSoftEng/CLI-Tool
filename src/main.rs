@@ -128,12 +128,16 @@ fn read_github_repos_from_file(filename: &str) -> Vec<GithubRepo> {
 
     let reader = BufReader::new(file);
 
+    let re = Regex::new(r"https://github.com/?").unwrap();
     let mut repos = vec![];
     for line in reader.lines() {
         let line = line.unwrap();
         let scores = vec![-1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
-        let repo = GithubRepo::new(line, scores);
-        repos.push(repo);
+        if(re.captures(&line).is_some())
+        {
+            let repo = GithubRepo::new(line, scores);
+            repos.push(repo);
+        }
     }
 
     repos
@@ -181,13 +185,12 @@ async fn main() -> Result<()> {
 
     let mut repos_list = read_github_repos_from_file(&args.path);
     //println!("{}", repos_list);
-    let repo_info = extract_owner_and_repo(repos_list.first().unwrap().url.as_str());
-    let owner = repo_info.clone().unwrap().0;
-    let repo_name = repo_info.clone().unwrap().1;
-
-    let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await;
 
     for repository in &mut repos_list{
+        let repo_info = extract_owner_and_repo(&repository.url);
+        let owner = repo_info.clone().unwrap().0;
+        let repo_name = repo_info.clone().unwrap().1;
+        let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await;
         calc_metrics(repository, token.clone(), owner.clone(), repo_name.clone()).await;
         //sort_repositories(repos_list.as_mut());
         create_ndjson(repository.url.as_str(), repository.overall(), repository.rampup(), repository.correct(), repository.bus(), repository.responsive(), repository.license());

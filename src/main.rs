@@ -170,7 +170,7 @@ async fn main() -> Result<()> {
         "1" => LevelFilter::Info,
         "2" => LevelFilter::Warn,
         "3" => LevelFilter::Debug,
-        _ => panic!("Invalid log level specified: {}", log_level),
+        _ => LevelFilter::Info,
     };
 
     let config = Config::builder()

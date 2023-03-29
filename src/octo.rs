@@ -4,6 +4,7 @@ use serde_json;
 
 use octocrab::{Octocrab, Page, Result, models::{self, repos::RepoCommit}, params};
 use std::error::Error;
+use log::{info, warn, debug};
 use chrono::{Duration, Utc, NaiveDate, DateTime};
 
 pub fn init_octo(token: String) -> Result<Octocrab, octocrab::Error>
@@ -11,12 +12,12 @@ pub fn init_octo(token: String) -> Result<Octocrab, octocrab::Error>
     (Octocrab::builder().personal_token(token).build())
 }
 
-pub async fn get_repo(token: String, owner: String, repo_name: String) -> octocrab::models::Repository {
+pub async fn get_repo(token: String, owner: String, repo_name: String) -> bool {
     let octo = Octocrab::builder().personal_token(token).build().unwrap();
     match octo.repos(owner, repo_name.clone()).get().await 
     {
-        Ok(repo) => repo,
-        Err(_) => panic!("Could not retrieve {}", repo_name.as_str()),
+        Ok(repo) => true,
+        Err(err) => {warn!("ERROR: {} failed to get repo {}", err.to_string(), repo_name.to_string()); false}
     }
 }
 

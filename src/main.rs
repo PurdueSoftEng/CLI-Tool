@@ -167,9 +167,9 @@ async fn main() -> Result<()> {
         .build(log_path)?;
 
     let log_level = match log_level.as_str() {
-        "1" => LevelFilter::Error,
+        "1" => LevelFilter::Info,
         "2" => LevelFilter::Warn,
-        "3" => LevelFilter::Info,
+        "3" => LevelFilter::Debug,
         _ => panic!("Invalid log level specified: {}", log_level),
     };
 
@@ -191,9 +191,12 @@ async fn main() -> Result<()> {
         let owner = repo_info.clone().unwrap().0;
         let repo_name = repo_info.clone().unwrap().1;
         let repo = octo::get_repo(token.clone(), owner.clone(), repo_name.clone()).await;
-        calc_metrics(repository, token.clone(), owner.clone(), repo_name.clone()).await;
-        //sort_repositories(repos_list.as_mut());
-        create_ndjson(repository.url.as_str(), repository.overall(), repository.rampup(), repository.correct(), repository.bus(), repository.responsive(), repository.license());
+        if(repo)
+        {
+            calc_metrics(repository, token.clone(), owner.clone(), repo_name.clone()).await;
+            //sort_repositories(repos_list.as_mut());
+            create_ndjson(repository.url.as_str(), repository.overall(), repository.rampup(), repository.correct(), repository.bus(), repository.responsive(), repository.license());
+        }
     }
 
     Ok(())
@@ -263,7 +266,7 @@ mod tests {
         let owner = "cloudinary";
         let repo_name = "cloudinary_npm";
         let expected_output = 0.0;
-        let token: String = std::env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
+        //let token: String = std::env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required").into();
 
         let result = calc_responsive_maintainer::calc_responsive_maintainer(0.0, 0.0);
         assert_eq!(result, expected_output);

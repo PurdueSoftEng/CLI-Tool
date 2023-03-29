@@ -1,6 +1,10 @@
 #!/bin/bash
 
 # Mode 1: Install Dependencies
+if [ ! -d "log" ]; then
+    mkdir log
+fi
+
 git submodule update --init --recursive --quiet > log/git.log 2>&1
 if [ -e "log/build.log" ]; then
     rm log/build.log

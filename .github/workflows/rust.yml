@@ -21,8 +21,8 @@ jobs:
     - uses: space-wizards/submodule-dependency@v0.1.5
     - uses: snickerbockers/submodules-init@v4
     - name: Build
-      run: bash ./run install
+      run: bash run install
     - name: Run
-      run: bash ./run tests/test.txt
+      run: bash run tests/test.txt
     - name: Tests
-      run: bash ./run test 
+      run: bash run test 

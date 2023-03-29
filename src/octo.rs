@@ -38,7 +38,7 @@ pub async fn get_issue(token: String, owner: String, repo: String) -> Result<Pag
         {
             Ok(Some(next_page)) => next_page,
             Ok(None) => break,
-            Err(_) => break,
+            Err(err) => {warn!("ERROR: {} Failed to fetch issue page", err.to_string()); break}
         }
     }
 
@@ -108,7 +108,7 @@ pub async fn get_commits(token: String, owner: String, repo: String, t: f64) -> 
         {
             Ok(Some(next_page)) => page = next_page,
             Ok(None) => break,
-            Err(_) => break,
+            Err(err) => {warn!("ERROR: {} Failed to fetch commit page", err.to_string()); break}
         }
     }
     Ok(bins)
@@ -144,7 +144,7 @@ pub async fn get_bugs(token: String, owner: String, repo: String) -> Result<Vec<
         {
             Ok(Some(next_page)) => next_page,
             Ok(None) => break,
-            Err(_) => break,
+            Err(err) => {warn!("ERROR: {} Failed to fetch bug page", err.to_string()); break}
         }
     }
 
@@ -169,7 +169,7 @@ pub async fn get_all_commits(token: String, owner: String, repo: String) -> Resu
         {
             Ok(Some(next_page)) => next_page,
             Ok(None) => break,
-            Err(_) => break,
+            Err(err) => {warn!("ERROR: {} Failed to fetch commit page", err.to_string()); break}
         }
     }
     Ok((commits))
@@ -230,7 +230,7 @@ pub async fn get_num_commits(token: String, owner: &str, repo: &str) -> serde_js
     match octo.graphql(&str).await
     {
         Ok(json) => json,
-        Err(_) => panic!("Error with query"),
+        Err(err) => panic!("Error with query"),
     }
 }
 

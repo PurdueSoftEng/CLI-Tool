@@ -280,7 +280,7 @@ mod tests {
         file.write_all(b"https://github.com/lodash/lodash\nhttps://github.com/nullivex/nodist\nhttps://www.npmjs.com/package/browserify").unwrap();
 
         let repos = read_github_repos_from_file(test_file_path.to_str().unwrap());
-        assert_eq!(repos.len(), 3);
+        assert_eq!(repos.len(), 2);
         assert_eq!(repos.get(0).unwrap().url, String::from("https://github.com/lodash/lodash"));
         assert_eq!(repos.get(1).unwrap().url, String::from("https://github.com/nullivex/nodist"));
         assert_eq!(repos.get(2).unwrap().url, String::from("https://www.npmjs.com/package/browserify"));

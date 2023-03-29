@@ -9,6 +9,8 @@ git submodule update --init --recursive --quiet > log/git.log 2>&1
 if [ -e "log/build.log" ]; then
     rm log/build.log
 fi
+chmod +x scripts/rank.sh
+chmod +x scripts/test.sh
 cargo clean --quiet
 cargo build > log/build.log 2>&1
 
